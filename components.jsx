@@ -184,6 +184,15 @@ function BulletList({ items, lang, kind }) {
   );
 }
 
+function BusinessSegmentsSection({ segments, currency, lang }) {
+  if (!segments || !segments.sets || !segments.sets.length) return null;
+  return (
+    <Section id="segments" title={t('sec_segments', lang)}>
+      <SegmentAnalysisChart segments={segments} currency={currency} lang={lang} />
+    </Section>
+  );
+}
+
 // Full article body — the assembled sections for one analysis. Shared by the
 // public company page and the admin live-preview pane.
 function AnalysisView({ a, lang }) {
@@ -204,6 +213,8 @@ function AnalysisView({ a, lang }) {
       <Section id="margins" title={t('sec_margins', lang)}>
         <MarginTrendChart annual={s.annual} lang={lang} />
       </Section>
+
+      <BusinessSegmentsSection segments={s.segments} currency={cur} lang={lang} />
 
       <div className="two-col">
         <Section id="valuation" title={t('sec_valuation', lang)}>
@@ -236,5 +247,5 @@ function AnalysisView({ a, lang }) {
 
 Object.assign(window, {
   RatingBadge, CountryTag, Nav, Footer, AnalysisCard, AnalysisView,
-  Snapshot, Section, ValuationTable, BalanceTable, FilingCard, BulletList,
+  Snapshot, Section, ValuationTable, BalanceTable, FilingCard, BulletList, BusinessSegmentsSection,
 });

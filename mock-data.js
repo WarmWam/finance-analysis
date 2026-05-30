@@ -16,6 +16,7 @@
 //   peers:     [{ ticker, pe }]
 //   filing:    { type, date, url, highlight_en, highlight_th }
 //   insider:   [{ name, action, shares, date }]
+//   segments:  optional; see .claude/skills/equity-research/references/segment-shape.md
 
 window.MOCK_ANALYSES = [
   {
@@ -55,6 +56,58 @@ window.MOCK_ANALYSES = [
         { name: 'J. Huang (CEO)', action: 'sell', shares: 120000, date: '2026-03-15' },
         { name: 'C. Kress (CFO)', action: 'sell', shares: 30000,  date: '2026-03-10' },
       ],
+      segments: {
+        source_standard: 'Company KPI',
+        source_url: 'https://investor.nvidia.com/financial-info/financial-reports/default.aspx',
+        currency: '$',
+        fiscal_years: [2021, 2022, 2023, 2024, 2025],
+        primary_lens: 'market_platforms',
+        archetype: 'product_service',
+        disclosure_quality: 'B',
+        notes: ['NVIDIA discloses revenue by market platform, but not operating income by platform.'],
+        sets: [
+          {
+            id: 'market_platforms',
+            label_en: 'Market Platforms',
+            label_th: 'แพลตฟอร์มตลาด',
+            kind: 'product',
+            metrics: ['revenue'],
+            items: [
+              { id: 'data-center', name_en: 'Data Center', name_th: 'Data Center', annual: [
+                { year: 2021, revenue: 6700e6 },
+                { year: 2022, revenue: 10610e6 },
+                { year: 2023, revenue: 15005e6 },
+                { year: 2024, revenue: 47525e6 },
+                { year: 2025, revenue: 85700e6 },
+              ] },
+              { id: 'gaming', name_en: 'Gaming', name_th: 'Gaming', annual: [
+                { year: 2021, revenue: 7760e6 },
+                { year: 2022, revenue: 12462e6 },
+                { year: 2023, revenue: 9067e6 },
+                { year: 2024, revenue: 10447e6 },
+                { year: 2025, revenue: 7100e6 },
+              ] },
+              { id: 'professional-visualization', name_en: 'Professional Visualization', name_th: 'Professional Visualization', annual: [
+                { year: 2021, revenue: 1053e6 },
+                { year: 2022, revenue: 2111e6 },
+                { year: 2023, revenue: 1544e6 },
+                { year: 2024, revenue: 1553e6 },
+                { year: 2025, revenue: 1900e6 },
+              ] },
+              { id: 'automotive', name_en: 'Automotive', name_th: 'Automotive', annual: [
+                { year: 2021, revenue: 536e6 },
+                { year: 2022, revenue: 566e6 },
+                { year: 2023, revenue: 903e6 },
+                { year: 2024, revenue: 1091e6 },
+                { year: 2025, revenue: 1607e6 },
+              ] },
+            ],
+            reconciliation: [
+              { year: 2025, consolidated_revenue: 96307e6, segment_revenue_total: 96307e6, eliminations: 0, unallocated: 0 }
+            ]
+          }
+        ]
+      },
     },
   },
   {

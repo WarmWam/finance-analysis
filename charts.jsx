@@ -53,6 +53,25 @@ function getNiceStepForBarChart(maxVal) {
   return stepMultiplier * magnitude;
 }
 
+function getNiceBoundsForBarChart(minVal, maxVal) {
+  if (minVal >= 0) {
+    const step = getNiceStepForBarChart(Math.max(maxVal, 1));
+    return { lo: 0, hi: step * 3 };
+  }
+
+  if (maxVal <= 0) {
+    const step = getNiceStepForBarChart(Math.max(Math.abs(minVal), 1));
+    return { lo: -step * 3, hi: 0 };
+  }
+
+  const maxAbs = Math.max(Math.abs(minVal), Math.abs(maxVal), 1);
+  const step = getNiceStepForBarChart(maxAbs);
+  return {
+    lo: -Math.ceil(Math.abs(minVal) / step) * step,
+    hi: Math.ceil(maxVal / step) * step,
+  };
+}
+
 /* Revenue bars + profit line(s). series = [{kind:'bar'|'line', name, color, data[]}] */
 function BarLineChart({ series, years, unit, fmt, height, unitSuffix, currency }) {
   const W = 680, H = height || 240;
@@ -73,11 +92,12 @@ function BarLineChart({ series, years, unit, fmt, height, unitSuffix, currency }
     lo = bounds.lo;
     hi = bounds.hi;
   } else {
-    // Bar chart, anchor at 0 and leave room at top
-    const maxVal = Math.max(...all, 1);
-    lo = 0;
-    const step = getNiceStepForBarChart(maxVal);
-    hi = step * 3;
+    // Bar chart, anchor around zero while keeping negative bars inside the plot.
+    const minVal = Math.min(...all);
+    const maxVal = Math.max(...all);
+    const bounds = getNiceBoundsForBarChart(minVal, maxVal);
+    lo = bounds.lo;
+    hi = bounds.hi;
   }
 
   const n = years.length;
@@ -93,6 +113,7 @@ function BarLineChart({ series, years, unit, fmt, height, unitSuffix, currency }
   // gridlines
   const ticks = [lo, lo + (hi - lo) / 3, lo + 2 * (hi - lo) / 3, hi];
   const zeroY = lo < 0 && hi > 0 ? y(0) : null;
+  const clampY = (v, min, max) => Math.max(min, Math.min(max, v));
 
   return (
     <div className="chart">
@@ -138,11 +159,14 @@ function BarLineChart({ series, years, unit, fmt, height, unitSuffix, currency }
             const y0 = zeroY != null ? zeroY : y(lo);
             const yv = y(v);
             const top = Math.min(y0, yv), hh = Math.abs(yv - y0);
+            const labelY = v < 0
+              ? clampY(yv + 14, padT + 11, H - padB - 3)
+              : clampY(yv - 6, padT + 11, H - padB - 3);
             return (
               <g key={s.name + i}>
                 <rect x={xPos - bw/2} y={top} width={bw} height={Math.max(hh, 1)} rx="3" fill={s.color} opacity="0.92" />
                 {/* Bar top label */}
-                <text x={xPos} y={top - 6} textAnchor="middle" fill="var(--ink)" fontSize="10.5" fontWeight="600">{v.toFixed(decimals)}</text>
+                <text x={xPos} y={labelY} textAnchor="middle" fill="var(--ink)" fontSize="10.5" fontWeight="600">{v.toFixed(decimals)}</text>
               </g>
             );
           })
@@ -164,10 +188,11 @@ function BarLineChart({ series, years, unit, fmt, height, unitSuffix, currency }
             }
             const x1 = xPrev + bw/2 + 4, y1 = yPrev;
             const x2 = xCur - bw/2 - 4, y2 = yCur;
+            const labelY = clampY((y1 + y2) / 2 - 8, padT + 11, H - padB - 3);
             return (
               <g key={'growth' + i}>
                 <line x1={x1} y1={y1} x2={x2} y2={y2} stroke={g >= 0 ? "var(--bull)" : "var(--bear)"} strokeDasharray="3 3" strokeWidth="1.2" opacity="0.8" />
-                <text x={(x1 + x2) / 2} y={(y1 + y2) / 2 - 8} textAnchor="middle" fill={g >= 0 ? "var(--bull)" : "var(--bear)"} fontSize="11" fontWeight="700">
+                <text x={(x1 + x2) / 2} y={labelY} textAnchor="middle" fill={g >= 0 ? "var(--bull)" : "var(--bear)"} fontSize="11" fontWeight="700">
                   {(g >= 0 ? "+" : "") + g.toFixed(1) + "%"}
                 </text>
               </g>

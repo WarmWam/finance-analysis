@@ -33,6 +33,8 @@ window.STR = {
   m_op_margin:      { en: 'Operating Margin',      th: 'อัตรากำไรดำเนินงาน' },
   m_net_margin:     { en: 'Net Margin',            th: 'อัตรากำไรสุทธิ' },
   m_revenue_growth: { en: 'Revenue Growth',        th: 'การเติบโตรายได้' },
+  chart_both:       { en: 'Revenue + Profit',      th: 'รายได้ + กำไร' },
+  chart_yoy_hint:   { en: '% = year-over-year change', th: '% = เปลี่ยนแปลงเทียบปีก่อน' },
   m_pe:             { en: 'P/E',                    th: 'P/E' },
   m_fwd_pe:         { en: 'Forward P/E',           th: 'P/E ล่วงหน้า' },
   m_ps:             { en: 'P/S',                    th: 'P/S' },

@@ -11,40 +11,151 @@ function niceMax(v) {
   return step * pow;
 }
 
-// Revenue (bars) + Net income (bars), grouped per year. Values in raw units.
+// Revenue & profit over ~5 years. A toggle switches between the combined view,
+// single-series (revenue or net income, each with value labels + YoY% between
+// years), and the net-margin ratio line. Mirrors the segment chart's language so
+// the two read as a set.
 function RevenueProfitChart({ annual, currency, lang }) {
   if (!annual || !annual.length) return null;
-  const innerW = CHART_W - PAD.l - PAD.r, innerH = CHART_H - PAD.t - PAD.b;
-  const max = niceMax(Math.max(...annual.map(d => Math.max(d.revenue || 0, d.net_income || 0))));
+  const cur = currency || '$';
+  const [view, setView] = React.useState('both');
+  const views = [
+    { key: 'both',       label: t('chart_both', lang) },
+    { key: 'revenue',    label: t('m_revenue', lang) },
+    { key: 'net_income', label: t('m_net_income', lang) },
+    { key: 'margin',     label: t('m_net_margin', lang) },
+  ];
+  return (
+    <div className="segment-panel">
+      <div className="segment-controls">
+        <div className="segment-toggle" role="group" aria-label={t('metric', lang)}>
+          {views.map(v => (
+            <button key={v.key} className={view === v.key ? 'active' : ''} onClick={() => setView(v.key)}>{v.label}</button>
+          ))}
+        </div>
+      </div>
+      {view === 'margin'
+        ? <RevProfitMarginView annual={annual} lang={lang} />
+        : <RevProfitBarView annual={annual} view={view} currency={cur} lang={lang} />}
+    </div>
+  );
+}
+
+// Bar view: either the two series side by side ('both') or a single series with
+// a YoY% connector between consecutive years. Each bar is annotated with its value.
+function RevProfitBarView({ annual, view, currency, lang }) {
+  const both = view === 'both';
+  const keys = both ? ['revenue', 'net_income'] : [view];
+  const barCls = { revenue: 'bar-rev', net_income: 'bar-net' };
+  const pad = { ...PAD, t: 48 };
+  const innerW = CHART_W - pad.l - pad.r, innerH = CHART_H - pad.t - pad.b;
+  const max = niceMax(Math.max(...annual.flatMap(d => keys.map(k => d[k] || 0)), 1));
   const n = annual.length;
   const slot = innerW / n;
-  const bw = Math.min(34, slot * 0.34);
-  const y = (v) => PAD.t + innerH - (v / max) * innerH;
+  const bw = both ? Math.min(28, slot * 0.3) : Math.min(46, slot * 0.46);
+  const baseY = pad.t + innerH;
+  const y = (v) => baseY - (Math.max(0, v) / max) * innerH;
   const ticks = [0, 0.25, 0.5, 0.75, 1].map(f => f * max);
+  const cxOf = (i) => pad.l + slot * i + slot / 2;
+  const primary = both ? 'revenue' : view;
+  const primCx = (i) => both ? cxOf(i) - bw / 2 - 1 : cxOf(i); // bar the YoY deltas attach to
 
   return (
     <div className="chart-wrap">
       <svg viewBox={`0 0 ${CHART_W} ${CHART_H}`} className="chart" role="img">
         {ticks.map((tk, i) => (
           <g key={i}>
-            <line x1={PAD.l} x2={CHART_W - PAD.r} y1={y(tk)} y2={y(tk)} className="grid" />
-            <text x={PAD.l - 8} y={y(tk) + 4} className="axis-label" textAnchor="end">{fmtBig(tk, '')}</text>
+            <line x1={pad.l} x2={CHART_W - pad.r} y1={y(tk)} y2={y(tk)} className="grid" />
+            <text x={pad.l - 8} y={y(tk) + 4} className="axis-label" textAnchor="end">{fmtBig(tk, '')}</text>
           </g>
         ))}
         {annual.map((d, i) => {
-          const cx = PAD.l + slot * i + slot / 2;
+          const cx = cxOf(i);
           return (
             <g key={i}>
-              <rect x={cx - bw - 2} y={y(d.revenue)} width={bw} height={PAD.t + innerH - y(d.revenue)} className="bar-rev" rx="2" />
-              <rect x={cx + 2} y={y(d.net_income)} width={bw} height={PAD.t + innerH - y(d.net_income)} className="bar-net" rx="2" />
-              <text x={cx} y={CHART_H - PAD.b + 18} className="axis-label" textAnchor="middle">{d.year}</text>
+              {both ? (
+                <g>
+                  <rect x={cx - bw - 1} y={y(d.revenue)} width={bw} height={baseY - y(d.revenue)} className="bar-rev" rx="2" />
+                  <rect x={cx + 1} y={y(d.net_income)} width={bw} height={baseY - y(d.net_income)} className="bar-net" rx="2" />
+                  <text x={cx - bw / 2 - 1} y={y(d.revenue) - 6} className="segment-value-label" textAnchor="middle">{fmtBig(d.revenue, '')}</text>
+                  <text x={cx + bw / 2 + 1} y={y(d.net_income) - 6} className="segment-value-label" textAnchor="middle">{fmtBig(d.net_income, '')}</text>
+                </g>
+              ) : (
+                <g>
+                  <rect x={cx - bw / 2} y={y(d[view])} width={bw} height={baseY - y(d[view])} className={barCls[view]} rx="2" />
+                  <text x={cx} y={y(d[view]) - 8} className="segment-value-label" textAnchor="middle">{fmtBig(d[view], currency)}</text>
+                </g>
+              )}
+              <text x={cx} y={CHART_H - pad.b + 18} className="axis-label" textAnchor="middle">{d.year}</text>
+            </g>
+          );
+        })}
+        {annual.slice(1).map((d, i) => {
+          const prev = annual[i];
+          const pv = prev[primary], cv = d[primary];
+          if (!pv) return null;
+          const delta = ((cv - pv) / Math.abs(pv)) * 100;
+          if (!isFinite(delta)) return null;
+          const x1 = primCx(i), x2 = primCx(i + 1);
+          const y1 = Math.max(12, y(pv) - 22), y2 = Math.max(12, y(cv) - 22);
+          const tone = delta >= 0 ? 'up' : 'down';
+          return (
+            <g key={i} className="segment-delta-link">
+              <line x1={x1} y1={y1} x2={x2} y2={y2} className={`segment-delta-line ${tone}`} />
+              <text x={(x1 + x2) / 2} y={Math.max(11, (y1 + y2) / 2 - 4)} className={`segment-delta ${tone}`} textAnchor="middle">{`${delta > 0 ? '+' : ''}${fmtNum(delta, 1)}%`}</text>
             </g>
           );
         })}
       </svg>
       <div className="legend">
-        <span><i className="sw sw-rev" /> {t('m_revenue', lang)}</span>
-        <span><i className="sw sw-net" /> {t('m_net_income', lang)}</span>
+        {both ? (
+          <React.Fragment>
+            <span><i className="sw sw-rev" /> {t('m_revenue', lang)}</span>
+            <span><i className="sw sw-net" /> {t('m_net_income', lang)}</span>
+          </React.Fragment>
+        ) : (
+          <span className="muted">{t('chart_yoy_hint', lang)}</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Net-margin ratio line (net income / revenue), with a % label per point.
+function RevProfitMarginView({ annual, lang }) {
+  const rows = annual.map(d => ({ year: d.year, m: d.revenue ? (d.net_income / d.revenue) * 100 : null }));
+  const pad = { ...PAD, t: 30, r: 24 };
+  const innerW = CHART_W - pad.l - pad.r, innerH = CHART_H - pad.t - pad.b;
+  const vals = rows.map(r => r.m).filter(v => v != null);
+  const max = niceMax(Math.max(...vals, 10));
+  const min = Math.min(0, ...vals);
+  const n = rows.length;
+  const x = (i) => pad.l + (n === 1 ? innerW / 2 : (innerW * i) / (n - 1));
+  const y = (v) => pad.t + innerH - ((v - min) / (max - min || 1)) * innerH;
+  const ticks = [0, 0.25, 0.5, 0.75, 1].map(f => min + f * (max - min));
+  const pts = rows.map((r, i) => ({ i, m: r.m })).filter(p => p.m != null);
+  const path = pts.map((p, k) => `${k === 0 ? 'M' : 'L'} ${x(p.i)} ${y(p.m)}`).join(' ');
+
+  return (
+    <div className="chart-wrap">
+      <svg viewBox={`0 0 ${CHART_W} ${CHART_H}`} className="chart" role="img">
+        {ticks.map((tk, i) => (
+          <g key={i}>
+            <line x1={pad.l} x2={CHART_W - pad.r} y1={y(tk)} y2={y(tk)} className="grid" />
+            <text x={pad.l - 8} y={y(tk) + 4} className="axis-label" textAnchor="end">{tk.toFixed(0)}%</text>
+          </g>
+        ))}
+        {rows.map((r, i) => <text key={i} x={x(i)} y={CHART_H - pad.b + 18} className="axis-label" textAnchor="middle">{r.year}</text>)}
+        <path d={path} className="line ln-net" fill="none" />
+        {pts.map((p, k) => (
+          <g key={k}>
+            <circle cx={x(p.i)} cy={y(p.m)} r="3" className="dot ln-net" />
+            <text x={x(p.i)} y={y(p.m) - 9} className="segment-point-label" textAnchor="middle">{fmtPct(p.m, 1)}</text>
+          </g>
+        ))}
+      </svg>
+      <div className="legend">
+        <span><i className="sw ln-net" /> {t('m_net_margin', lang)}</span>
       </div>
     </div>
   );

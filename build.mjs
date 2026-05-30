@@ -70,14 +70,14 @@ writeFileSync(`dist/assets/${cssName}`, css);
 // 4. Generate index.html: swap stylesheet, drop the dev <script> tags, load the
 //    single hashed bundle. Everything between the marker and </body> is replaced.
 let html = readFileSync('index.html', 'utf8');
-html = html.replace('href="styles.css"', `href="assets/${cssName}"`);
+html = html.replace('href="styles.css"', `href="/assets/${cssName}"`);
 
 const start = html.indexOf('<!-- app scripts -->');
 const end = html.indexOf('</body>');
 if (start === -1 || end === -1) {
   throw new Error('index.html structure changed: could not find script block markers');
 }
-html = html.slice(0, start) + `<script src="assets/${jsName}"></script>\n` + html.slice(end);
+html = html.slice(0, start) + `<script src="/assets/${jsName}"></script>\n` + html.slice(end);
 writeFileSync('dist/index.html', html);
 
 console.log('Built dist/');

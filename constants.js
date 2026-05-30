@@ -1,0 +1,77 @@
+// Static constants: i18n strings, rating bands, sector list. No data here.
+
+// Bilingual UI strings. Access via t('key', lang) from helpers.
+window.STR = {
+  site_name:        { en: 'Ledger Lens',           th: 'Ledger Lens' },
+  tagline:          { en: 'Plain-English equity research, one company a day',
+                      th: 'วิเคราะห์หุ้นรายบริษัท อ่านง่าย วันละตัว' },
+  nav_home:         { en: 'Home',                  th: 'หน้าแรก' },
+  nav_all:          { en: 'All analyses',          th: 'บทวิเคราะห์ทั้งหมด' },
+  latest:           { en: 'Latest analyses',       th: 'บทวิเคราะห์ล่าสุด' },
+  read:             { en: 'Read',                  th: 'อ่านต่อ' },
+  as_of:            { en: 'As of',                 th: 'ข้อมูล ณ' },
+  market_cap:       { en: 'Market Cap',            th: 'มูลค่าตลาด' },
+  sector:           { en: 'Sector',                th: 'กลุ่มธุรกิจ' },
+
+  sec_overview:     { en: 'Business Overview',     th: 'ภาพรวมธุรกิจ' },
+  sec_performance:  { en: 'Revenue & Profit',      th: 'รายได้และกำไร' },
+  sec_margins:      { en: 'Margin Trend',          th: 'แนวโน้มอัตรากำไร' },
+  sec_valuation:    { en: 'Valuation',             th: 'การประเมินมูลค่า' },
+  sec_balance:      { en: 'Balance Sheet Health',  th: 'สุขภาพงบดุล' },
+  sec_analyst:      { en: 'Analyst Consensus',     th: 'มุมมองนักวิเคราะห์' },
+  sec_filing:       { en: 'Latest Filing',         th: 'รายงานล่าสุด' },
+  sec_catalysts:    { en: 'Growth Catalysts',      th: 'ปัจจัยหนุน' },
+  sec_risks:        { en: 'Risk Factors',          th: 'ปัจจัยเสี่ยง' },
+  sec_take:         { en: 'Our Take',              th: 'มุมมองของเรา' },
+
+  m_revenue:        { en: 'Revenue',               th: 'รายได้' },
+  m_gross_profit:   { en: 'Gross Profit',          th: 'กำไรขั้นต้น' },
+  m_op_income:      { en: 'Operating Income',      th: 'กำไรจากดำเนินงาน' },
+  m_net_income:     { en: 'Net Income',            th: 'กำไรสุทธิ' },
+  m_gross_margin:   { en: 'Gross Margin',          th: 'อัตรากำไรขั้นต้น' },
+  m_op_margin:      { en: 'Operating Margin',      th: 'อัตรากำไรดำเนินงาน' },
+  m_net_margin:     { en: 'Net Margin',            th: 'อัตรากำไรสุทธิ' },
+  m_pe:             { en: 'P/E',                    th: 'P/E' },
+  m_fwd_pe:         { en: 'Forward P/E',           th: 'P/E ล่วงหน้า' },
+  m_ps:             { en: 'P/S',                    th: 'P/S' },
+  m_pb:             { en: 'P/B',                    th: 'P/B' },
+  m_ev_ebitda:      { en: 'EV/EBITDA',             th: 'EV/EBITDA' },
+  m_peg:            { en: 'PEG',                    th: 'PEG' },
+  m_5y_avg:         { en: '5Y Avg',                th: 'เฉลี่ย 5 ปี' },
+  m_cash:           { en: 'Cash',                  th: 'เงินสด' },
+  m_debt:           { en: 'Total Debt',            th: 'หนี้สินรวม' },
+  m_de:             { en: 'Debt / Equity',         th: 'หนี้สินต่อทุน' },
+  m_current:        { en: 'Current Ratio',         th: 'อัตราส่วนสภาพคล่อง' },
+  m_coverage:       { en: 'Interest Coverage',     th: 'ความสามารถจ่ายดอกเบี้ย' },
+
+  price_target:     { en: 'Price Target',          th: 'ราคาเป้าหมาย' },
+  buy:              { en: 'Buy',                    th: 'ซื้อ' },
+  hold:             { en: 'Hold',                   th: 'ถือ' },
+  sell:             { en: 'Sell',                   th: 'ขาย' },
+  metric:           { en: 'Metric',                th: 'ตัวชี้วัด' },
+  current:          { en: 'Current',                th: 'ปัจจุบัน' },
+  vs_peer:          { en: 'vs Peers',              th: 'เทียบคู่แข่ง' },
+
+  empty:            { en: 'No analyses published yet.', th: 'ยังไม่มีบทวิเคราะห์' },
+  loading:          { en: 'Loading…',              th: 'กำลังโหลด…' },
+  back:             { en: '← Back',                 th: '← กลับ' },
+  disclaimer:       { en: 'For educational purposes only. Not investment advice.',
+                      th: 'เพื่อการศึกษาเท่านั้น ไม่ใช่คำแนะนำการลงทุน' },
+};
+
+// Rating display config.
+window.RATINGS = {
+  bull:    { label_en: 'Bullish', label_th: 'มุมมองบวก',  emoji: '🟢', cls: 'bull' },
+  neutral: { label_en: 'Neutral', label_th: 'เป็นกลาง',   emoji: '🟡', cls: 'neutral' },
+  bear:    { label_en: 'Bearish', label_th: 'มุมมองลบ',   emoji: '🔴', cls: 'bear' },
+};
+
+// Country flag tags.
+window.COUNTRIES = {
+  US: { flag: '🇺🇸', label: 'US' },
+  KR: { flag: '🇰🇷', label: 'Korea' },
+  JP: { flag: '🇯🇵', label: 'Japan' },
+  CN: { flag: '🇨🇳', label: 'China' },
+  HK: { flag: '🇭🇰', label: 'Hong Kong' },
+  TW: { flag: '🇹🇼', label: 'Taiwan' },
+};

@@ -140,7 +140,7 @@ function Financials({ c, lang }) {
             {t('margin_legend_net', lang)}
           </button>
         </div>
-        <BarLineChart series={series} years={years} unitSuffix={c.unitSuffix} height={250} />
+        <BarLineChart series={series} years={years} unitSuffix={c.unitSuffix} currency={c.currency} height={250} />
       </div>
 
       <div className="tbl-wrap" style={{ marginTop: 12 }}>

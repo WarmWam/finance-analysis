@@ -54,7 +54,7 @@ function getNiceStepForBarChart(maxVal) {
 }
 
 /* Revenue bars + profit line(s). series = [{kind:'bar'|'line', name, color, data[]}] */
-function BarLineChart({ series, years, unit, fmt, height, unitSuffix }) {
+function BarLineChart({ series, years, unit, fmt, height, unitSuffix, currency }) {
   const W = 680, H = height || 240;
   const padL = 6, padR = 6, padT = 32, padB = 26; // padT is 32 to give room for YoY growth labels
   const plotW = W - padL - padR, plotH = H - padT - padB;
@@ -87,6 +87,8 @@ function BarLineChart({ series, years, unit, fmt, height, unitSuffix }) {
   const numBars = barSeries.length;
   const bw = (plotW / n) * 0.44 / Math.max(numBars, 1);
   const suffix = unitSuffix || "";
+  const maxVal = Math.max(...all, 1);
+  const decimals = maxVal >= 10 ? 0 : 2;
 
   // gridlines
   const ticks = [lo, lo + (hi - lo) / 3, lo + 2 * (hi - lo) / 3, hi];
@@ -100,8 +102,8 @@ function BarLineChart({ series, years, unit, fmt, height, unitSuffix }) {
           const isTop = i === ticks.length - 1;
           const cleanVal = Number(t.toFixed(4));
           const formattedVal = Number.isInteger(cleanVal) ? cleanVal.toString() : cleanVal.toFixed(1);
-          const displayLabel = isTop 
-            ? (barSeries.length === 0 ? formattedVal + "%" : formattedVal + suffix)
+          const displayLabel = barSeries.length === 0 
+            ? (isTop ? formattedVal + "%" : formattedVal)
             : formattedVal;
           return (
             <g key={i}>
@@ -110,6 +112,19 @@ function BarLineChart({ series, years, unit, fmt, height, unitSuffix }) {
             </g>
           );
         })}
+        {barSeries.length > 0 && suffix && (
+          <text 
+            className="axis-lab" 
+            x={W - padR} 
+            y={y(lo) + 13} 
+            textAnchor="end" 
+            fill="var(--ink-3)" 
+            fontSize="10.5" 
+            fontWeight="700"
+          >
+            {currency ? `(${currency}${suffix})` : `(${suffix})`}
+          </text>
+        )}
         {zeroY != null && <line x1={padL} x2={W - padR} y1={zeroY} y2={zeroY} stroke="var(--ink-4)" strokeWidth="1.2" />}
 
         {/* Side-by-side Bars */}
@@ -127,7 +142,7 @@ function BarLineChart({ series, years, unit, fmt, height, unitSuffix }) {
               <g key={s.name + i}>
                 <rect x={xPos - bw/2} y={top} width={bw} height={Math.max(hh, 1)} rx="3" fill={s.color} opacity="0.92" />
                 {/* Bar top label */}
-                <text x={xPos} y={top - 6} textAnchor="middle" fill="var(--ink)" fontSize="10.5" fontWeight="600">{v.toFixed(v >= 100 ? 0 : 1)}</text>
+                <text x={xPos} y={top - 6} textAnchor="middle" fill="var(--ink)" fontSize="10.5" fontWeight="600">{v.toFixed(decimals)}</text>
               </g>
             );
           })

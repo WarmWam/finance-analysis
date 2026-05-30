@@ -52,6 +52,8 @@ window.STR = {
   current_price:    { en: 'Current Price',         th: 'ราคาปัจจุบัน' },
   segment_set:      { en: 'View',                  th: 'มุมมอง' },
   segment_metric:   { en: 'Metric',                th: 'ตัวชี้วัด' },
+  segment_focus:    { en: 'Focus',                 th: 'เลือกธุรกิจ' },
+  segment_all:      { en: 'All businesses',        th: 'ทุกธุรกิจ' },
   segment_view:     { en: 'Segment chart view',    th: 'มุมมองกราฟธุรกิจย่อย' },
   segment_absolute: { en: 'Absolute',              th: 'มูลค่า' },
   segment_mix:      { en: 'Mix %',                 th: 'สัดส่วน %' },

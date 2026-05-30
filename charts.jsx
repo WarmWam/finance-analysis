@@ -162,20 +162,35 @@ function SegmentAnalysisChart({ segments, currency, lang }) {
   const [setId, setSetId] = React.useState('');
   const [metric, setMetric] = React.useState('revenue');
   const [mode, setMode] = React.useState('mix');
+  const [selectedIds, setSelectedIds] = React.useState([]);
   if (!sets.length) return null;
   const set = sets.find(s => s.id === setId) || sets[0];
   const metrics = segmentMetrics(set, lang);
   const activeMetric = metrics.some(m => m.key === metric) ? metric : (metrics[0]?.key || 'revenue');
+  const metricItems = segmentItemsWithMetric(set, activeMetric);
+  const validIds = new Set(metricItems.map(segmentItemId));
+  const activeSelectedIds = selectedIds.filter(id => validIds.has(id));
+  const activeSelectedSet = new Set(activeSelectedIds);
+  const focusedItems = activeSelectedIds.length
+    ? metricItems.filter(item => activeSelectedSet.has(segmentItemId(item)))
+    : metricItems;
+  const focusedSet = { ...set, items: focusedItems };
   const lineMode = activeMetric === 'operating_margin' || activeMetric === 'revenue_growth';
-  const canMix = !lineMode && segmentCanMix(set, activeMetric);
+  const canMix = !lineMode && segmentCanMix(focusedSet, activeMetric);
   const activeMode = canMix ? mode : 'absolute';
+  const toggleSegment = (id) => {
+    setSelectedIds(prev => {
+      const clean = prev.filter(itemId => validIds.has(itemId));
+      return clean.includes(id) ? clean.filter(itemId => itemId !== id) : [...clean, id];
+    });
+  };
 
   return (
     <div className="segment-panel">
       <div className="segment-controls">
         <label>
           <span>{t('segment_set', lang)}</span>
-          <select value={set.id} onChange={(e) => { setSetId(e.target.value); setMetric('revenue'); setMode('mix'); }}>
+          <select value={set.id} onChange={(e) => { setSetId(e.target.value); setMetric('revenue'); setMode('mix'); setSelectedIds([]); }}>
             {sets.map(s => <option key={s.id} value={s.id}>{segmentSetLabel(s, lang)}</option>)}
           </select>
         </label>
@@ -193,11 +208,21 @@ function SegmentAnalysisChart({ segments, currency, lang }) {
         )}
       </div>
 
-      {lineMode
-        ? <SegmentLineChart set={set} metric={activeMetric} lang={lang} />
-        : <SegmentStackedChart set={set} metric={activeMetric} mode={activeMode} currency={currency || segments.currency || '$'} lang={lang} />}
+      {metricItems.length > 1 && (
+        <SegmentFocusPicker
+          items={metricItems}
+          selectedIds={activeSelectedIds}
+          onToggle={toggleSegment}
+          onClear={() => setSelectedIds([])}
+          lang={lang}
+        />
+      )}
 
-      <SegmentTable set={set} currency={currency || segments.currency || '$'} lang={lang} />
+      {lineMode
+        ? <SegmentLineChart set={focusedSet} metric={activeMetric} lang={lang} paletteItems={metricItems} />
+        : <SegmentStackedChart set={focusedSet} metric={activeMetric} mode={activeMode} currency={currency || segments.currency || '$'} lang={lang} paletteItems={metricItems} />}
+
+      <SegmentTable set={focusedSet} shareSet={set} currency={currency || segments.currency || '$'} lang={lang} />
       {(segments.notes || set.notes) && (
         <p className="segment-note">{[...(segments.notes || []), ...(set.notes || [])].join(' ')}</p>
       )}
@@ -208,24 +233,56 @@ function SegmentAnalysisChart({ segments, currency, lang }) {
   );
 }
 
-function SegmentStackedChart({ set, metric, mode, currency, lang }) {
+function SegmentFocusPicker({ items, selectedIds, onToggle, onClear, lang }) {
+  const selectedSet = new Set(selectedIds);
+  return (
+    <div className="segment-focus">
+      <span className="segment-focus-label">{t('segment_focus', lang)}</span>
+      <div className="segment-chips" role="group" aria-label={t('segment_focus', lang)}>
+        <button type="button" className={`segment-chip${selectedIds.length ? '' : ' active'}`} onClick={onClear}>
+          {t('segment_all', lang)}
+        </button>
+        {items.map((item, i) => {
+          const id = segmentItemId(item);
+          const active = selectedSet.has(id);
+          return (
+            <button
+              type="button"
+              key={id}
+              className={`segment-chip${active ? ' active' : ''}`}
+              onClick={() => onToggle(id)}
+              title={segmentItemLabel(item, lang)}
+            >
+              <i style={{ background: SEGMENT_COLORS[i % SEGMENT_COLORS.length] }} />
+              <span>{segmentItemLabel(item, lang)}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function SegmentStackedChart({ set, metric, mode, currency, lang, paletteItems }) {
   const years = segmentYears(set);
   const items = segmentItemsWithMetric(set, metric);
   if (!years.length || !items.length) return <p className="muted">{t('segment_not_disclosed', lang)}</p>;
-  const innerW = CHART_W - PAD.l - PAD.r, innerH = CHART_H - PAD.t - PAD.b;
+  const pad = { ...PAD, t: 44, r: 20 };
+  const innerW = CHART_W - pad.l - pad.r, innerH = CHART_H - pad.t - pad.b;
   const slot = innerW / years.length;
   const bw = Math.min(48, slot * 0.55);
   const rows = years.map(year => {
     const vals = items.map(item => ({ item, value: segmentValue(item, year, metric) || 0 }));
     const pos = vals.filter(v => v.value > 0).reduce((s, v) => s + v.value, 0);
     const neg = vals.filter(v => v.value < 0).reduce((s, v) => s + v.value, 0);
-    return { year, vals, pos, neg };
+    const total = vals.reduce((s, v) => s + v.value, 0);
+    return { year, vals, pos, neg, total };
   });
   const mix = mode === 'mix';
   const maxPos = mix ? 100 : niceMax(Math.max(...rows.map(r => r.pos), 1));
   const minNeg = mix ? 0 : Math.min(0, ...rows.map(r => r.neg));
   const span = maxPos - minNeg || 1;
-  const y = (v) => PAD.t + ((maxPos - v) / span) * innerH;
+  const y = (v) => pad.t + ((maxPos - v) / span) * innerH;
   const ticks = mix ? [0, 25, 50, 75, 100] : [minNeg, 0, maxPos * 0.5, maxPos].filter((v, i, a) => a.indexOf(v) === i);
 
   return (
@@ -233,46 +290,73 @@ function SegmentStackedChart({ set, metric, mode, currency, lang }) {
       <svg viewBox={`0 0 ${CHART_W} ${CHART_H}`} className="chart" role="img">
         {ticks.map((tk, i) => (
           <g key={i}>
-            <line x1={PAD.l} x2={CHART_W - PAD.r} y1={y(tk)} y2={y(tk)} className="grid" />
-            <text x={PAD.l - 8} y={y(tk) + 4} className="axis-label" textAnchor="end">{mix ? `${tk}%` : fmtBig(tk, '')}</text>
+            <line x1={pad.l} x2={CHART_W - pad.r} y1={y(tk)} y2={y(tk)} className="grid" />
+            <text x={pad.l - 8} y={y(tk) + 4} className="axis-label" textAnchor="end">{mix ? `${tk}%` : fmtBig(tk, '')}</text>
           </g>
         ))}
         {rows.map((row, i) => {
-          const cx = PAD.l + slot * i + slot / 2;
-          const total = row.pos || 1;
+          const cx = pad.l + slot * i + slot / 2;
+          const stackTotal = row.pos || 1;
+          const prev = rows[i - 1];
+          const delta = prev && prev.total ? ((row.total - prev.total) / Math.abs(prev.total)) * 100 : null;
+          const labelAnchor = row.total >= 0 ? y(mix ? 100 : row.pos) : y(row.neg);
+          const valueY = row.total >= 0 ? Math.max(14, labelAnchor - 8) : Math.min(CHART_H - pad.b - 4, labelAnchor + 14);
+          const deltaY = Math.min(CHART_H - pad.b - 4, valueY + 14);
           let pos = 0, neg = 0;
           return (
             <g key={row.year}>
               {row.vals.map(({ item, value }, j) => {
                 if (value === 0) return null;
-                const draw = mix ? (Math.max(0, value) / total) * 100 : value;
+                const draw = mix ? (Math.max(0, value) / stackTotal) * 100 : value;
                 const from = value >= 0 ? pos : neg;
                 const to = value >= 0 ? pos + draw : neg + draw;
                 if (value >= 0) pos = to; else neg = to;
                 const y1 = y(Math.max(from, to));
                 const y2 = y(Math.min(from, to));
-                return <rect key={item.id || item.name_en} x={cx - bw / 2} y={y1} width={bw} height={Math.max(1, y2 - y1)} fill={SEGMENT_COLORS[j % SEGMENT_COLORS.length]} rx="2" />;
+                const h = Math.max(1, y2 - y1);
+                const insideLabel = mix ? `${fmtNum(draw, 0)}%` : fmtBig(value, '');
+                return (
+                  <g key={segmentItemId(item)}>
+                    <rect x={cx - bw / 2} y={y1} width={bw} height={h} fill={segmentColor(item, j, paletteItems)} rx="2" />
+                    {h >= 24 && (
+                      <text x={cx} y={y1 + h / 2 + 4} className="segment-stack-label" textAnchor="middle">
+                        {insideLabel}
+                      </text>
+                    )}
+                  </g>
+                );
               })}
-              <text x={cx} y={CHART_H - PAD.b + 18} className="axis-label" textAnchor="middle">{row.year}</text>
+              {row.total !== 0 && (
+                <text x={cx} y={valueY} className="segment-value-label" textAnchor="middle">
+                  {fmtBig(row.total, currency)}
+                </text>
+              )}
+              {delta != null && isFinite(delta) && (
+                <text x={cx} y={deltaY} className={`segment-delta ${delta >= 0 ? 'up' : 'down'}`} textAnchor="middle">
+                  {`${delta > 0 ? '+' : ''}${fmtNum(delta, 1)}%`}
+                </text>
+              )}
+              <text x={cx} y={CHART_H - pad.b + 18} className="axis-label" textAnchor="middle">{row.year}</text>
             </g>
           );
         })}
       </svg>
-      <SegmentLegend items={items} lang={lang} />
+      <SegmentLegend items={items} lang={lang} paletteItems={paletteItems} />
     </div>
   );
 }
 
-function SegmentLineChart({ set, metric, lang }) {
+function SegmentLineChart({ set, metric, lang, paletteItems }) {
   const years = segmentYears(set);
   const items = segmentItemsWithMetric(set, metric);
   if (!years.length || !items.length) return <p className="muted">{t('segment_not_disclosed', lang)}</p>;
-  const innerW = CHART_W - PAD.l - PAD.r, innerH = CHART_H - PAD.t - PAD.b;
+  const pad = { ...PAD, t: 28, r: 24 };
+  const innerW = CHART_W - pad.l - pad.r, innerH = CHART_H - pad.t - pad.b;
   const vals = items.flatMap(item => years.map(year => segmentValue(item, year, metric))).filter(v => v != null && isFinite(v));
   const max = niceMax(Math.max(...vals, 10));
   const min = Math.min(0, ...vals);
-  const x = (i) => PAD.l + (years.length === 1 ? innerW / 2 : (innerW * i) / (years.length - 1));
-  const y = (v) => PAD.t + innerH - ((v - min) / (max - min || 1)) * innerH;
+  const x = (i) => pad.l + (years.length === 1 ? innerW / 2 : (innerW * i) / (years.length - 1));
+  const y = (v) => pad.t + innerH - ((v - min) / (max - min || 1)) * innerH;
   const ticks = [0, 0.25, 0.5, 0.75, 1].map(f => min + f * (max - min));
 
   return (
@@ -280,42 +364,57 @@ function SegmentLineChart({ set, metric, lang }) {
       <svg viewBox={`0 0 ${CHART_W} ${CHART_H}`} className="chart" role="img">
         {ticks.map((tk, i) => (
           <g key={i}>
-            <line x1={PAD.l} x2={CHART_W - PAD.r} y1={y(tk)} y2={y(tk)} className="grid" />
-            <text x={PAD.l - 8} y={y(tk) + 4} className="axis-label" textAnchor="end">{tk.toFixed(0)}%</text>
+            <line x1={pad.l} x2={CHART_W - pad.r} y1={y(tk)} y2={y(tk)} className="grid" />
+            <text x={pad.l - 8} y={y(tk) + 4} className="axis-label" textAnchor="end">{tk.toFixed(0)}%</text>
           </g>
         ))}
-        {years.map((year, i) => <text key={year} x={x(i)} y={CHART_H - PAD.b + 18} className="axis-label" textAnchor="middle">{year}</text>)}
+        {years.map((year, i) => <text key={year} x={x(i)} y={CHART_H - pad.b + 18} className="axis-label" textAnchor="middle">{year}</text>)}
         {items.map((item, j) => {
           const points = years.map((year, i) => ({ x: x(i), y: y(segmentValue(item, year, metric)), v: segmentValue(item, year, metric) })).filter(p => p.v != null && isFinite(p.v));
           if (points.length < 2) return null;
           return (
-            <g key={item.id || item.name_en}>
-              <path d={points.map((p, i) => `${i ? 'L' : 'M'} ${p.x} ${p.y}`).join(' ')} className="line" stroke={SEGMENT_COLORS[j % SEGMENT_COLORS.length]} fill="none" />
-              {points.map((p, i) => <circle key={i} cx={p.x} cy={p.y} r="3" fill={SEGMENT_COLORS[j % SEGMENT_COLORS.length]} />)}
+            <g key={segmentItemId(item)}>
+              <path d={points.map((p, i) => `${i ? 'L' : 'M'} ${p.x} ${p.y}`).join(' ')} className="line" stroke={segmentColor(item, j, paletteItems)} fill="none" />
+              {points.map((p, i) => (
+                <g key={i}>
+                  <circle cx={p.x} cy={p.y} r="3" fill={segmentColor(item, j, paletteItems)} />
+                  {(items.length <= 3 || i === points.length - 1) && (
+                    <text
+                      x={p.x}
+                      y={Math.max(13, p.y - 7)}
+                      className="segment-point-label"
+                      textAnchor={i === points.length - 1 ? 'end' : 'middle'}
+                    >
+                      {fmtPct(p.v, 1)}
+                    </text>
+                  )}
+                </g>
+              ))}
             </g>
           );
         })}
       </svg>
-      <SegmentLegend items={items} lang={lang} />
+      <SegmentLegend items={items} lang={lang} paletteItems={paletteItems} />
     </div>
   );
 }
 
-function SegmentLegend({ items, lang }) {
+function SegmentLegend({ items, lang, paletteItems }) {
   return (
     <div className="legend segment-legend">
       {items.map((item, i) => (
-        <span key={item.id || item.name_en}><i className="sw" style={{ background: SEGMENT_COLORS[i % SEGMENT_COLORS.length] }} /> {segmentItemLabel(item, lang)}</span>
+        <span key={segmentItemId(item)}><i className="sw" style={{ background: segmentColor(item, i, paletteItems) }} /> {segmentItemLabel(item, lang)}</span>
       ))}
     </div>
   );
 }
 
-function SegmentTable({ set, currency, lang }) {
-  const years = segmentYears(set);
+function SegmentTable({ set, shareSet, currency, lang }) {
+  const baseSet = shareSet || set;
+  const years = segmentYears(baseSet);
   const latest = years[years.length - 1];
   const items = set.items || [];
-  const revenueTotal = items.reduce((s, item) => s + Math.max(0, segmentValue(item, latest, 'revenue') || 0), 0) || 1;
+  const revenueTotal = (baseSet.items || []).reduce((s, item) => s + Math.max(0, segmentValue(item, latest, 'revenue') || 0), 0) || 1;
   return (
     <div className="table-wrap segment-table-wrap">
       <table className="data-table segment-table">
@@ -334,7 +433,7 @@ function SegmentTable({ set, currency, lang }) {
             const opMargin = segmentValue(item, latest, 'operating_margin');
             const share = revenue != null ? (Math.max(0, revenue) / revenueTotal) * 100 : null;
             return (
-              <tr key={item.id || item.name_en}>
+              <tr key={segmentItemId(item)}>
                 <td>{segmentItemLabel(item, lang)}</td>
                 <td className="num">{fmtBig(revenue, currency)}</td>
                 <td className="num">{fmtPct(share, 1)}</td>
@@ -352,8 +451,17 @@ function SegmentTable({ set, currency, lang }) {
 function segmentSetLabel(set, lang) {
   return set[`label_${lang}`] || set.label_en || set.id || '';
 }
+function segmentItemId(item) {
+  return item.id || item.name_en || item.name_th || '';
+}
 function segmentItemLabel(item, lang) {
   return item[`name_${lang}`] || item.name_en || item.id || '';
+}
+function segmentColor(item, index, paletteItems) {
+  const id = segmentItemId(item);
+  const paletteIndex = (paletteItems || []).findIndex(candidate => segmentItemId(candidate) === id);
+  const colorIndex = paletteIndex >= 0 ? paletteIndex : index;
+  return SEGMENT_COLORS[colorIndex % SEGMENT_COLORS.length];
 }
 function segmentYears(set) {
   const ys = new Set();

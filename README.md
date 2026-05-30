@@ -40,8 +40,11 @@ node serve-preview.mjs   # local preview on http://localhost:3200
 ## Status
 
 - [x] **Phase 1** — Scaffold, build pipeline, full company page + charts (mock data)
-- [ ] **Phase 2** — Supabase schema live + `api/` functions + admin publish flow
-- [ ] **Phase 3** — FMP auto-fetch wired into admin
+- [x] **Phase 2** — `api/` functions (companies, company, financials, publish) + admin
+      publish flow with live preview. *Code complete & UI-verified; goes live once
+      you do the SETUP.md account steps (Supabase + FMP + Vercel env).*
+- [x] **Phase 3** — FMP auto-fetch wired into the admin Fetch button (`api/financials.js`).
+      *Field mappings may need a one-pass tweak against your real FMP plan's responses.*
 - [ ] **Phase 4** — SEO prerender, domain, Google AdSense
 
 See [SETUP.md](SETUP.md) for the by-hand steps (Supabase, FMP key, env vars, domain).

@@ -184,7 +184,57 @@ function BulletList({ items, lang, kind }) {
   );
 }
 
+// Full article body — the assembled sections for one analysis. Shared by the
+// public company page and the admin live-preview pane.
+function AnalysisView({ a, lang }) {
+  const s = a.data_snapshot || {};
+  const cur = s.quote?.currency || '$';
+  return (
+    <React.Fragment>
+      <Snapshot a={a} lang={lang} />
+
+      <Section id="take" title={t('sec_take', lang)}>
+        <MD src={pick(a, 'body', lang)} />
+      </Section>
+
+      <Section id="performance" title={t('sec_performance', lang)}>
+        <RevenueProfitChart annual={s.annual} currency={cur} lang={lang} />
+      </Section>
+
+      <Section id="margins" title={t('sec_margins', lang)}>
+        <MarginTrendChart annual={s.annual} lang={lang} />
+      </Section>
+
+      <div className="two-col">
+        <Section id="valuation" title={t('sec_valuation', lang)}>
+          <ValuationTable valuation={s.valuation} peers={s.peers} lang={lang} />
+        </Section>
+        <Section id="balance" title={t('sec_balance', lang)}>
+          <BalanceTable balance={s.balance} currency={cur} lang={lang} />
+        </Section>
+      </div>
+
+      <Section id="analyst" title={t('sec_analyst', lang)}>
+        <AnalystChart analyst={s.analyst} currency={cur} lang={lang} />
+      </Section>
+
+      <Section id="filing" title={t('sec_filing', lang)}>
+        <FilingCard filing={s.filing} lang={lang} />
+      </Section>
+
+      <div className="two-col">
+        <Section id="catalysts" title={t('sec_catalysts', lang)}>
+          <BulletList items={a.catalysts} lang={lang} kind="catalysts" />
+        </Section>
+        <Section id="risks" title={t('sec_risks', lang)}>
+          <BulletList items={a.risks} lang={lang} kind="risks" />
+        </Section>
+      </div>
+    </React.Fragment>
+  );
+}
+
 Object.assign(window, {
-  RatingBadge, CountryTag, Nav, Footer, AnalysisCard,
+  RatingBadge, CountryTag, Nav, Footer, AnalysisCard, AnalysisView,
   Snapshot, Section, ValuationTable, BalanceTable, FilingCard, BulletList,
 });

@@ -42,6 +42,7 @@ const order = [
   'charts.jsx',
   'components.jsx',
   'mock-data.js',
+  'admin.jsx',
   'app.jsx',
 ].filter(existsSync);
 

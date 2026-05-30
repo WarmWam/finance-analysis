@@ -7,13 +7,15 @@ description: >-
   Samsung", "analyze Toyota", "ทำบทวิเคราะห์ Apple", "เจาะหุ้น <ชื่อ>", or just a
   ticker/company name with intent to study it. Covers US, Korea, Japan, China,
   Hong Kong, and Taiwan listings. The skill researches the latest financials,
-  filings, valuation, and analyst views, writes a bilingual (Thai/English)
+  filings, valuation, analyst views, and 1-year daily candlestick price history,
+  writes a bilingual (Thai/English)
   11-section analysis, and publishes it to the live website. For multi-business
   companies, it also researches segment-level revenue, profit, geography,
   product, and channel disclosures when available. Trigger this even
   when the user doesn't say "publish" — producing the analysis IS publishing it.
-  Do NOT use for day-trading setups, gold/forex/XAUUSD, or price-action questions
-  (that's the fx-trading skill), nor for portfolio-wide or macro-only requests.
+  Do NOT use for day-trading setups, gold/forex/XAUUSD, or pure price-action
+  trading questions (that's the fx-trading skill), nor for portfolio-wide or
+  macro-only requests.
 ---
 
 # Equity Research → Ledger Lens
@@ -41,6 +43,7 @@ Confirm the country so the right flag and filing type are used.
 Search for the most recent data. Run several focused searches rather than one broad
 one. You need:
 - **Quote**: price, day change %, market cap, and the currency it trades in.
+- **Price history**: 1-year daily OHLCV candles for the candlestick chart.
 - **5 years of annual** revenue, gross profit, operating income, net income, EPS, free cash flow.
 - **Valuation**: P/E, forward P/E, P/S, P/B, EV/EBITDA, PEG — and the ~5-year average P/E and P/S for context.
 - **Balance sheet**: cash, total debt, debt/equity, current ratio, interest coverage.
@@ -61,6 +64,17 @@ EDINET (Japan), HKEXnews (HK), stockanalysis.com, macrotrends, Yahoo Finance,
 TradingView. Cross-check at least the headline figures across two sources. If a
 data point is genuinely unavailable, use `null` — never invent numbers. A published
 analysis with a few honest gaps beats a confident fabrication.
+
+For the price-action chart, fetch 1-year daily candles with:
+
+```bash
+node scripts/fetch-price-history.mjs <yahoo-symbol> ./.tmp/<ticker>-price-history.json
+```
+
+Yahoo Finance's chart endpoint is a free/unofficial secondary source, so store
+`source`, `source_url`, `fetched_at`, `range`, `interval`, and raw daily OHLCV
+candles. If Yahoo fails or the ticker has no compatible symbol, leave
+`data_snapshot.price_history` absent and mention the gap briefly.
 
 If you have subagents available (Claude Code's Agent tool), you can fan the research
 out — one agent on financials/filings, one on valuation/analyst data — and merge
@@ -84,6 +98,11 @@ discloses segment revenue.
 - `body_en` / `body_th`: the "Our Take" in markdown — business overview, why it matters,
   the bull case, the bear case, and your verdict. Specific, numbers-driven, no filler.
 - `catalysts` / `risks`: 2-4 concrete items each, as `{ "en": ..., "th": ... }`.
+- `verdict`: fill the 4 answer cards shown in the "Our View" section. Each card needs
+  `label_en`, `label_th`, `detail_en`, `detail_th`, and `tone` (`"up"` / `"neutral"` / `"down"`).
+  The four keys are `interesting` (is it worth buying?), `margin` (improving or not?),
+  `mainBiz` (which segment drives profit?), `valuation` (cheap or priced for perfection?).
+  If you omit `verdict` the UI falls back to generic placeholder text — always include it.
 
 Write Thai that reads naturally to a Thai investor — not a literal translation. The
 two languages should make the same argument, each in its own idiom.
@@ -94,6 +113,14 @@ exact (see `references/snapshot-shape.md`; for multi-business companies add
 `data_snapshot.segments` per `references/segment-shape.md`). All money in raw
 units. Set `analysis_date` to today. Save it to a temp file, e.g.
 `./.tmp/<ticker>-<date>.json`.
+
+Include valuation range fields (`pe_low`, `pe_high`, `pe_peer`, `ps_low`, etc.)
+whenever you have 5-year history — they power the range-bar chart that makes the
+valuation section useful. At minimum supply `pe_avg5` and `ps_avg5`.
+
+Include `data_snapshot.price_history` when the OHLCV fetch validates. Candles must
+be daily (`interval: "1d"`), one-year range (`range: "1y"`), ascending by date,
+and must not be invented or smoothed.
 
 ### 6. Validate before publishing
 Run the structural check first — it catches the mistakes (missing fields, an
@@ -121,8 +148,9 @@ setup" below. On success you'll see `✓ Published: <slug>` and a link.
 Don't trust the POST blindly. If `publish.mjs` returned a non-zero exit or an HTTP
 error, the article is **not** live — report the error verbatim and fix it; never
 tell the user it published when it didn't. On success, open `/company/<slug>` (or
-`GET /api/company?slug=<slug>`) and confirm the snapshot price, the charts, and —
-when you sent `segments` — the segment view actually render.
+`GET /api/company?slug=<slug>`) and confirm the snapshot price, the financial
+charts, the 1-year candlestick chart when `price_history` is present, and — when
+you sent `segments` — the segment view actually render.
 
 ### 9. Confirm
 Give the user the live URL and a 2-3 line recap of your verdict (rating + the
@@ -141,14 +169,18 @@ re-publishing the same ticker+date overwrites.
 
 ## First-time setup (once)
 
-The publish script needs the write token. Put it in `finance-analysis/.env`
-(gitignored — never commit it):
+The publish script needs the write token. Put it in the project root `.env`
+(the `finance-analysis new ui/` directory — it's gitignored, never commit it):
 
 ```
 LEDGER_ADMIN_TOKEN=the-admin-token-you-set-in-vercel
 ```
 
-Optionally override the target with `LEDGER_PUBLISH_URL=` if the deployment URL changes.
+The script walks up from `cwd` to find the nearest `.env`, so running from
+anywhere inside the project will pick it up automatically.
+
+Optionally override the target URL with `LEDGER_PUBLISH_URL=` if the Vercel
+deployment URL changes (current default: `finance-analysis-eight.vercel.app`).
 
 ## Notes
 

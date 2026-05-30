@@ -8,7 +8,9 @@ description: >-
   ticker/company name with intent to study it. Covers US, Korea, Japan, China,
   Hong Kong, and Taiwan listings. The skill researches the latest financials,
   filings, valuation, and analyst views, writes a bilingual (Thai/English)
-  11-section analysis, and publishes it to the live website. Trigger this even
+  11-section analysis, and publishes it to the live website. For multi-business
+  companies, it also researches segment-level revenue, profit, geography,
+  product, and channel disclosures when available. Trigger this even
   when the user doesn't say "publish" — producing the analysis IS publishing it.
   Do NOT use for day-trading setups, gold/forex/XAUUSD, or price-action questions
   (that's the fx-trading skill), nor for portfolio-wide or macro-only requests.
@@ -45,6 +47,9 @@ one. You need:
 - **Analyst consensus**: counts (strong buy / buy / hold / sell) and price target low/avg/high.
 - **Latest filing**: the most recent 10-K/10-Q (or 20-F / 사업보고서 / 有価証券報告書 / 年度报告), its date, URL, and one real highlight.
 - **Peers**: 2-4 comparable companies and their P/E.
+- **Segments**: for multi-business companies, read `references/segment-shape.md`
+  and extract reportable segments, product/service revenue, geography, channel,
+  and segment profit/margin where disclosed.
 
 Good sources: the company's investor-relations page, SEC EDGAR (US), DART (Korea),
 EDINET (Japan), HKEXnews (HK), stockanalysis.com, macrotrends, Yahoo Finance,
@@ -58,6 +63,12 @@ an actual opinion: is growth accelerating? Are margins expanding (pricing power)
 compressing? Is it cheap or priced for perfection versus its own history and peers?
 Can the balance sheet survive a bad year? Decide a **rating** (`bull`/`neutral`/`bear`)
 and be able to defend it.
+
+For companies with several business engines (Alphabet, Amazon, Toyota, Alibaba,
+Tencent, Sony, Samsung, SoftBank, Berkshire-style holdings), also read
+`references/segment-shape.md`. Identify the growth engine, profit engine, cash
+drain, and disclosure limits. Never invent segment profit if the filing only
+discloses segment revenue.
 
 ### 4. Write the editorial (bilingual)
 - `summary_en` / `summary_th`: 1-3 sharp lines for the home card.

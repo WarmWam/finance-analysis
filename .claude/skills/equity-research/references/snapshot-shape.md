@@ -49,7 +49,8 @@ are computed by the UI from the annual figures, so you don't supply them separat
   "peers": [ { "ticker": "AMD", "pe": 98 }, { "ticker": "AVGO", "pe": 41 } ],
   "filing": { "type": "10-K", "date": "2026-02-26", "url": "https://www.sec.gov/...",
               "highlight_en": "FY25 revenue +58% YoY...", "highlight_th": "รายได้ปี FY25 +58%..." },
-  "insider": [ { "name": "J. Huang (CEO)", "action": "sell", "shares": 120000, "date": "2026-03-15" } ]
+  "insider": [ { "name": "J. Huang (CEO)", "action": "sell", "shares": 120000, "date": "2026-03-15" } ],
+  "segments": { /* optional — see segment-shape.md for multi-business companies */ }
 }
 ```
 

@@ -298,6 +298,8 @@ function LineChart({ series, years, height, unit, suffix, floor }) {
 }
 
 function CandlestickChart({ history, height, currency }) {
+  const [hover, setHover] = React.useState(null);
+  const svgRef = React.useRef(null);
   const candles = ((history && history.candles) || []).filter((d) =>
     d && d.date && d.open != null && d.high != null && d.low != null && d.close != null
   );
@@ -314,6 +316,8 @@ function CandlestickChart({ history, height, currency }) {
   const bodyW = Math.max(1, Math.min(5, step * 0.62));
   const x = (i) => padL + (i + 0.5) * step;
   const y = (v) => padT + (hi - v) / (hi - lo) * plotH;
+  const priceAtY = (yy) => hi - ((yy - padT) / plotH) * (hi - lo);
+  const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
   const ticks = [lo, lo + (hi - lo) / 2, hi];
   const labelIdx = Array.from(new Set([0, Math.floor((n - 1) / 2), n - 1]));
   const first = candles[0], last = candles[n - 1];
@@ -329,6 +333,36 @@ function CandlestickChart({ history, height, currency }) {
     if (Number.isNaN(d.getTime())) return s;
     return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
   };
+  const dateLong = (s) => {
+    const d = new Date(s + "T00:00:00Z");
+    if (Number.isNaN(d.getTime())) return s;
+    return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+  };
+  const fmtVol = (v) => {
+    if (v == null || !Number.isFinite(Number(v))) return "-";
+    if (window.fmtCompact) return fmtCompact(v, "");
+    return Number(v).toLocaleString();
+  };
+  const handlePointerMove = (event) => {
+    const svg = svgRef.current;
+    if (!svg) return;
+    const rect = svg.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const sx = ((event.clientX - rect.left) / rect.width) * W;
+    const sy = ((event.clientY - rect.top) / rect.height) * H;
+    const hx = clamp(sx, padL, W - padR);
+    const hy = clamp(sy, padT, H - padB);
+    const idx = clamp(Math.round((hx - padL) / step - 0.5), 0, n - 1);
+    setHover({ x: hx, y: hy, idx, price: priceAtY(hy) });
+  };
+  const hovered = hover ? candles[hover.idx] : null;
+  const hoverOpenClose = hovered ? hovered.close - hovered.open : 0;
+  const hoverUp = hovered ? hovered.close >= hovered.open : false;
+  const tipW = 190, tipH = 82;
+  const tipX = hover ? clamp(hover.x + 12, padL, W - padR - tipW - 4) : 0;
+  const tipY = hover ? clamp(hover.y - tipH - 10, padT, H - padB - tipH) : 0;
+  const dateLabelW = 78;
+  const dateLabelX = hover ? clamp(hover.x - dateLabelW / 2, padL, W - padR - dateLabelW) : 0;
 
   return (
     <div className="chart candle-chart">
@@ -337,7 +371,15 @@ function CandlestickChart({ history, height, currency }) {
         <span className={"delta " + (up ? "up" : "down")}>{up ? "+" : ""}{fmtPrice(last.close - first.close)} ({up ? "+" : ""}{chg.toFixed(1)}%)</span>
         <span className="tiny muted">{dateShort(first.date)} - {dateShort(last.date)}</span>
       </div>
-      <svg viewBox={`0 0 ${W} ${H}`} role="img" preserveAspectRatio="xMidYMid meet">
+      <svg
+        ref={svgRef}
+        viewBox={`0 0 ${W} ${H}`}
+        role="img"
+        preserveAspectRatio="xMidYMid meet"
+        onPointerMove={handlePointerMove}
+        onPointerDown={handlePointerMove}
+        onPointerLeave={() => setHover(null)}
+      >
         {ticks.map((t, i) => (
           <g key={i}>
             <line className="gridline" x1={padL} x2={W - padR} y1={y(t)} y2={y(t)} strokeDasharray="3 4" opacity="0.5" />
@@ -361,6 +403,27 @@ function CandlestickChart({ history, height, currency }) {
         {labelIdx.map((idx) => (
           <text key={idx} className="axis-lab" x={x(idx)} y={H - 8} textAnchor="middle">{dateShort(candles[idx].date)}</text>
         ))}
+        {hover && hovered && (
+          <g className="candle-crosshair">
+            <line x1={hover.x} x2={hover.x} y1={padT} y2={H - padB} />
+            <line x1={padL} x2={W - padR} y1={hover.y} y2={hover.y} />
+            <line className="candle-hover-marker" x1={x(hover.idx)} x2={x(hover.idx)} y1={y(hovered.high)} y2={y(hovered.low)} />
+            <rect className="candle-axis-tag" x={W - padR + 4} y={hover.y - 9} width={padR - 8} height="18" rx="4" />
+            <text className="candle-axis-tag-text" x={W - 4} y={hover.y + 4} textAnchor="end">{currency || history.currency || ""}{fmtPrice(hover.price)}</text>
+            <rect className="candle-axis-tag" x={dateLabelX} y={H - 23} width={dateLabelW} height="18" rx="4" />
+            <text className="candle-axis-tag-text" x={dateLabelX + dateLabelW / 2} y={H - 10} textAnchor="middle">{dateShort(hovered.date)}</text>
+            <g className="candle-tooltip" transform={`translate(${tipX} ${tipY})`}>
+              <rect width={tipW} height={tipH} rx="7" />
+              <text className="candle-tooltip-date" x="10" y="17">{dateLong(hovered.date)}</text>
+              <text x="10" y="36">O {currency || history.currency || ""}{fmtPrice(hovered.open)}</text>
+              <text x="96" y="36">H {currency || history.currency || ""}{fmtPrice(hovered.high)}</text>
+              <text x="10" y="53">L {currency || history.currency || ""}{fmtPrice(hovered.low)}</text>
+              <text x="96" y="53">C {currency || history.currency || ""}{fmtPrice(hovered.close)}</text>
+              <text x="10" y="70">V {fmtVol(hovered.volume)}</text>
+              <text className={hoverUp ? "up" : "down"} x="96" y="70">{hoverOpenClose >= 0 ? "+" : ""}{fmtPrice(hoverOpenClose)}</text>
+            </g>
+          </g>
+        )}
       </svg>
     </div>
   );

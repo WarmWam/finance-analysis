@@ -49,13 +49,22 @@ one. You need:
 - **Peers**: 2-4 comparable companies and their P/E.
 - **Segments**: for multi-business companies, read `references/segment-shape.md`
   and extract reportable segments, product/service revenue, geography, channel,
-  and segment profit/margin where disclosed.
+  and segment profit/margin where disclosed. Search the filing text for the terms
+  that flag segment disclosure — `operating segments`, `reportable segments`,
+  `geographic`, `CODM` / `chief operating decision maker`, `分部` (CN), `セグメント`
+  (JP), `부문` (KR) — then grade the disclosure quality A–D and set the archetype
+  (the shape file lists them). Reconcile segment figures back to the consolidated
+  totals; never invent segment profit when only segment revenue is disclosed.
 
 Good sources: the company's investor-relations page, SEC EDGAR (US), DART (Korea),
 EDINET (Japan), HKEXnews (HK), stockanalysis.com, macrotrends, Yahoo Finance,
 TradingView. Cross-check at least the headline figures across two sources. If a
 data point is genuinely unavailable, use `null` — never invent numbers. A published
 analysis with a few honest gaps beats a confident fabrication.
+
+If you have subagents available (Claude Code's Agent tool), you can fan the research
+out — one agent on financials/filings, one on valuation/analyst data — and merge
+the results. Optional; a single careful pass is fine too.
 
 ### 3. Analyze — the 11-section framework
 Read `references/snapshot-shape.md` for the framework and the exact JSON shape. Form
@@ -108,9 +117,27 @@ It POSTs to `/api/publish` with the admin token and prints the live URL. The tok
 is read from `finance-analysis/.env` (`LEDGER_ADMIN_TOKEN=...`) — see "First-time
 setup" below. On success you'll see `✓ Published: <slug>` and a link.
 
-### 8. Confirm
-Give the user the published URL and a 2-3 line recap of your verdict. Offer to revise
-the rating or re-run if they push back — re-publishing the same ticker+date overwrites.
+### 8. Verify the live page
+Don't trust the POST blindly. If `publish.mjs` returned a non-zero exit or an HTTP
+error, the article is **not** live — report the error verbatim and fix it; never
+tell the user it published when it didn't. On success, open `/company/<slug>` (or
+`GET /api/company?slug=<slug>`) and confirm the snapshot price, the charts, and —
+when you sent `segments` — the segment view actually render.
+
+### 9. Confirm
+Give the user the live URL and a 2-3 line recap of your verdict (rating + the
+strongest catalyst and the sharpest risk). Offer to revise the rating or re-run —
+re-publishing the same ticker+date overwrites.
+
+## Quality bar
+
+- Cross-check headline numbers (revenue, EPS, market cap) across at least two
+  sources unless one primary filing is definitive.
+- On conflicts, trust the company **filing** for historical financials and live
+  **market data** for price/market cap — and note the discrepancy briefly.
+- `null` over guesses, every time. Money in raw integer units, never formatted
+  strings (`96307000000`, not `"96.3B"`).
+- Keep the JSON deterministic and parseable — no trailing commas, valid arrays.
 
 ## First-time setup (once)
 

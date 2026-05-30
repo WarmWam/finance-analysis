@@ -1,0 +1,4 @@
+interface:
+  display_name: "Ledger Lens Equity Research"
+  short_description: "Research stocks and publish Ledger Lens reports"
+  default_prompt: "Use $equity-research to research MSFT and publish the analysis."

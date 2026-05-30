@@ -50,12 +50,17 @@ function HomeList({ companies, onOpen, forceError, lang }) {
   const [country, setCountry] = React.useState(null);
   const [rating, setRating] = React.useState(null);
 
-  const countries = [
-    { code: "KR", label: t('c_kr', lang) }, 
-    { code: "US", label: t('c_us', lang) },
-    { code: "HK", label: t('c_hk', lang) }, 
-    { code: "TH", label: t('c_th', lang) },
-  ];
+  const countryLabel = (c) => {
+    const key = 'c_' + String(c.country || '').toLowerCase();
+    const translated = t(key, lang);
+    return translated === key ? (c.countryName || c.country) : translated;
+  };
+  const countries = Array.from(
+    new Map((companies || [])
+      .filter((c) => c.country)
+      .map((c) => [c.country, { code: c.country, label: countryLabel(c) }])
+    ).values()
+  ).sort((a, b) => a.label.localeCompare(b.label, lang === 'th' ? 'th' : 'en'));
   const ratings = [
     { code: "bull", label: t('rating_bull', lang) }, 
     { code: "neutral", label: t('rating_neutral', lang) }, 

@@ -5,7 +5,7 @@
     const vals = (revList || []).filter(v => v !== null && v !== undefined);
     if (vals.length === 0) return { factor: 1e9, unit: 'พันล้าน', unitEn: 'billion ' + currency };
     const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
-    if (avg >= 1e11) {
+    if (avg >= 1e12) {
       return { factor: 1e12, unit: 'ล้านล้าน', unitEn: 'trillion ' + currency };
     } else if (avg >= 1e8) {
       return { factor: 1e9, unit: 'พันล้าน', unitEn: 'billion ' + currency };

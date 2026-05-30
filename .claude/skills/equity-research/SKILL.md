@@ -80,11 +80,24 @@ Write Thai that reads naturally to a Thai investor — not a literal translation
 two languages should make the same argument, each in its own idiom.
 
 ### 5. Assemble the record JSON
-Build the full record object (see `references/snapshot-shape.md`). All money in raw
+The `data_snapshot` shape is the contract the web UI renders against — keep it
+exact (see `references/snapshot-shape.md`; for multi-business companies add
+`data_snapshot.segments` per `references/segment-shape.md`). All money in raw
 units. Set `analysis_date` to today. Save it to a temp file, e.g.
 `./.tmp/<ticker>-<date>.json`.
 
-### 6. Publish
+### 6. Validate before publishing
+Run the structural check first — it catches the mistakes (missing fields, an
+unsorted `annual`, a wrong rating value) that would otherwise render as blank
+charts or a 500 from the API:
+
+```bash
+node scripts/validate-record.mjs ./.tmp/<ticker>-<date>.json
+```
+
+Fix anything it reports until you see `OK: record validation passed`, then publish.
+
+### 7. Publish
 Run the bundled script from the skill directory:
 
 ```bash
@@ -95,7 +108,7 @@ It POSTs to `/api/publish` with the admin token and prints the live URL. The tok
 is read from `finance-analysis/.env` (`LEDGER_ADMIN_TOKEN=...`) — see "First-time
 setup" below. On success you'll see `✓ Published: <slug>` and a link.
 
-### 7. Confirm
+### 8. Confirm
 Give the user the published URL and a 2-3 line recap of your verdict. Offer to revise
 the rating or re-run if they push back — re-publishing the same ticker+date overwrites.
 

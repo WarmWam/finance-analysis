@@ -114,6 +114,8 @@ function AnalystChart({ analyst, quote, currency, lang }) {
     quote && Number.isFinite(quote.price) &&
     Number.isFinite(analyst.target_low) &&
     Number.isFinite(analyst.target_high);
+  const currentPos = hasCurrentPrice ? pctRange(quote.price, analyst.target_low, analyst.target_high) : null;
+  const currentEdge = currentPos < 16 ? ' edge-left' : currentPos > 84 ? ' edge-right' : '';
   return (
     <div className="analyst">
       <div className="consensus-bar">
@@ -133,8 +135,8 @@ function AnalystChart({ analyst, quote, currency, lang }) {
             {t('price_target', lang)}: <b>{fmtNum(analyst.target_avg, 0)}</b>
           </span>
           {hasCurrentPrice && (
-            <span className="t-current" style={{ left: `${pctRange(quote.price, analyst.target_low, analyst.target_high)}%` }}>
-              {t('current_price', lang)}: <b>{currency}{fmtNum(quote.price, 2)}</b>
+            <span className={`t-current${currentEdge}`} style={{ left: `${currentPos}%` }}>
+              <span className="t-current-label">{t('current_price', lang)}: <b>{currency}{fmtNum(quote.price, 2)}</b></span>
             </span>
           )}
           <span className="t-high">{fmtNum(analyst.target_high, 0)}</span>

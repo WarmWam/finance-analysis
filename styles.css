@@ -158,13 +158,17 @@ a:hover { color: var(--accent-ink); }
 .seg-hold { background: #d8b54a; } .sw.seg-hold { background: #d8b54a; }
 .seg-sell { background: #d2453a; } .sw.seg-sell { background: #d2453a; }
 .target-range { margin-top: 22px; }
-.target-track { position: relative; height: 4px; background: var(--line); border-radius: 4px; margin: 36px 10px 46px; }
-.t-low, .t-high { position: absolute; top: 10px; font-family: var(--font-mono); font-size: 12px; color: var(--ink-faint); }
+.target-track { position: relative; height: 76px; margin: 36px 10px 0; }
+.target-track::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 4px; background: var(--line); border-radius: 4px; }
+.t-low, .t-high { position: absolute; top: 14px; font-family: var(--font-mono); font-size: 12px; color: var(--ink-faint); }
 .t-low { left: 0; } .t-high { right: 0; }
 .t-avg { position: absolute; top: -28px; transform: translateX(-50%); white-space: nowrap; font-size: 13px; color: var(--ink-soft); }
 .t-avg::after { content: ''; position: absolute; left: 50%; top: 22px; width: 2px; height: 14px; background: var(--accent); transform: translateX(-50%); }
-.t-current { position: absolute; top: 20px; transform: translateX(-50%); white-space: nowrap; font-size: 13px; color: var(--accent-ink); }
-.t-current::before { content: ''; position: absolute; left: 50%; top: -18px; width: 2px; height: 14px; background: var(--accent-ink); transform: translateX(-50%); }
+.t-current { position: absolute; top: -7px; width: 2px; height: 24px; background: var(--accent-ink); transform: translateX(-50%); }
+.t-current::before { content: ''; position: absolute; left: 50%; top: -2px; width: 10px; height: 10px; border: 2px solid var(--surface); border-radius: 999px; background: var(--accent-ink); box-shadow: 0 0 0 1px var(--accent-ink); transform: translateX(-50%); }
+.t-current-label { position: absolute; left: 50%; top: 32px; transform: translateX(-50%); white-space: nowrap; font-size: 13px; color: var(--accent-ink); background: #eef5ff; border: 1px solid #cfe1ff; border-radius: 999px; padding: 3px 9px; box-shadow: 0 6px 14px -12px rgba(31,111,235,.55); }
+.t-current.edge-left .t-current-label { left: 0; transform: translateX(0); }
+.t-current.edge-right .t-current-label { left: auto; right: 0; transform: translateX(0); }
 
 /* ---------- Tables ---------- */
 .table-wrap { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 6px 18px; }

@@ -120,26 +120,27 @@
     };
 
     // Verdict mapping
-    const verdict = apiRecord.verdict ? {
+    const recordVerdict = apiRecord.verdict || snap.verdict;
+    const verdict = recordVerdict ? {
       interesting: {
-        label: pick(apiRecord.verdict.interesting, 'label', lang),
-        tone: apiRecord.verdict.interesting.tone || 'neutral',
-        detail: pick(apiRecord.verdict.interesting, 'detail', lang)
+        label: pick(recordVerdict.interesting, 'label', lang),
+        tone: recordVerdict.interesting.tone || 'neutral',
+        detail: pick(recordVerdict.interesting, 'detail', lang)
       },
       margin: {
-        label: pick(apiRecord.verdict.margin, 'label', lang),
-        tone: apiRecord.verdict.margin.tone || 'neutral',
-        detail: pick(apiRecord.verdict.margin, 'detail', lang)
+        label: pick(recordVerdict.margin, 'label', lang),
+        tone: recordVerdict.margin.tone || 'neutral',
+        detail: pick(recordVerdict.margin, 'detail', lang)
       },
       mainBiz: {
-        label: pick(apiRecord.verdict.mainBiz, 'label', lang),
-        tone: apiRecord.verdict.mainBiz.tone || 'neutral',
-        detail: pick(apiRecord.verdict.mainBiz, 'detail', lang)
+        label: pick(recordVerdict.mainBiz, 'label', lang),
+        tone: recordVerdict.mainBiz.tone || 'neutral',
+        detail: pick(recordVerdict.mainBiz, 'detail', lang)
       },
       valuation: {
-        label: pick(apiRecord.verdict.valuation, 'label', lang),
-        tone: apiRecord.verdict.valuation.tone || 'neutral',
-        detail: pick(apiRecord.verdict.valuation, 'detail', lang)
+        label: pick(recordVerdict.valuation, 'label', lang),
+        tone: recordVerdict.valuation.tone || 'neutral',
+        detail: pick(recordVerdict.valuation, 'detail', lang)
       }
     } : {
       interesting: { label: t('v_interesting_lbl', lang), tone: 'neutral', detail: t('v_interesting_det', lang) },
@@ -219,13 +220,13 @@
       ticker: apiRecord.ticker || '',
       exchange: apiRecord.exchange || '',
       country: apiRecord.country || '',
-      countryName: apiRecord.country_name_th || (lang === 'th' ? (apiRecord.country === 'US' ? 'สหรัฐอเมริกา' : apiRecord.country === 'KR' ? 'เกาหลีใต้' : apiRecord.country === 'JP' ? 'ญี่ปุ่น' : apiRecord.country === 'TH' ? 'ไทย' : apiRecord.country === 'HK' ? 'ฮ่องกง' : apiRecord.country) : apiRecord.country),
-      sector: pick(apiRecord, 'sector', lang) || apiRecord.sector,
-      sectorEn: apiRecord.sector_en || apiRecord.sector,
+      countryName: apiRecord.country_name_th || snap.country_name_th || (lang === 'th' ? (apiRecord.country === 'US' ? 'สหรัฐอเมริกา' : apiRecord.country === 'KR' ? 'เกาหลีใต้' : apiRecord.country === 'JP' ? 'ญี่ปุ่น' : apiRecord.country === 'TH' ? 'ไทย' : apiRecord.country === 'HK' ? 'ฮ่องกง' : apiRecord.country) : apiRecord.country),
+      sector: pick(apiRecord, 'sector', lang) || snap.sector_th || snap.sector_en || apiRecord.sector,
+      sectorEn: apiRecord.sector_en || snap.sector_en || apiRecord.sector,
       name: pick(apiRecord, 'name', lang) || apiRecord.name,
-      logoText: apiRecord.logo_text || apiRecord.name[0],
-      logoColor: apiRecord.logo_color || '#3a5bd9',
-      logoInk: apiRecord.logo_ink || '#fff',
+      logoText: apiRecord.logo_text || snap.logo_text || apiRecord.name[0],
+      logoColor: apiRecord.logo_color || snap.logo_color || '#3a5bd9',
+      logoInk: apiRecord.logo_ink || snap.logo_ink || '#fff',
       currency: ccy,
       sym: ccy,
       unit: lang === 'th' ? unit : unitEn,

@@ -71,7 +71,9 @@ function Verdict({ c, lang }) {
           <div className="section-title" style={{ fontSize: 16 }}>{t('our_view_title', lang)} <span className="en">Our view</span></div>
           <RatingPill rating={c.rating} label={c.ratingLabel} />
         </div>
-        <p className="verdict-thesis">{c.thesis}</p>
+        <div className="verdict-thesis" style={{ marginTop: 12, lineHeight: 1.6 }}>
+          <MD src={c.thesis} />
+        </div>
         <div className="verdict-grid">
           <VQ q={t('q_interesting', lang)} item={v.interesting} lang={lang} />
           <VQ q={t('q_margin', lang)} item={v.margin} lang={lang} />
@@ -121,7 +123,7 @@ function Financials({ c, lang }) {
 
   return (
     <div className="container section">
-      <div className="section-head"><div className="section-title">{t('rev_profit_5y_title', lang)} <span className="en">Revenue & profit</span></div></div>
+      <div className="section-head"><div className="section-title">{t('sec_performance', lang)} <span className="en">Revenue & profit</span></div></div>
       <div className="card" style={{ padding: "15px 14px 12px" }}>
         {/* Tab selection buttons */}
         <div className="chips noscroll" style={{ marginBottom: 14, background: "none", padding: 0 }}>
@@ -145,7 +147,7 @@ function Financials({ c, lang }) {
         <table className="fin">
           <thead>
             <tr>
-              <th>{t('items_label', lang)}</th>
+              <th>{t('items_label', lang)} <span style={{ fontWeight: 400, fontSize: '11px', display: 'block', color: 'var(--ink-3)', marginTop: 2 }}>({t('unit_label', lang)}: {c.sym} {c.unit})</span></th>
               {years.map((y) => <th key={y}>{y}</th>)}
               <th>YoY</th>
             </tr>
@@ -160,7 +162,7 @@ function Financials({ c, lang }) {
                 <tr key={r.key} className={r.hl ? "hl" : ""}>
                   <td className="rowlabel">{r.th}<small>{r.en}{r.eps ? " · " + c.sym + "/หุ้น" : ""}</small></td>
                   {arr.map((v, i) => (
-                    <td key={i}>{v == null ? <span className="dash">—</span> : <span className="num">{r.eps ? c.sym + fmtN(v, dec) : c.sym + fmtN(v, 1)}</span>}</td>
+                    <td key={i}>{v == null ? <span className="dash">—</span> : <span className="num">{r.eps ? c.sym + fmtN(v, dec) : fmtN(v, 1)}</span>}</td>
                   ))}
                   <td>{allNull ? <span className="dash">—</span> : <Delta value={yoy(last, prev)} />}</td>
                 </tr>
@@ -177,22 +179,45 @@ function Financials({ c, lang }) {
 /* ---------------- Margins ---------------- */
 function Margins({ c, lang }) {
   const m = c.margins, years = c.years;
+  
+  const [showGross, setShowGross] = React.useState(true);
+  const [showOp, setShowOp] = React.useState(true);
+  const [showNet, setShowNet] = React.useState(true);
+
   const series = [];
-  if (m.gross && m.gross.some((v) => v != null)) series.push({ name: t('margin_legend_gross', lang), color: "var(--c2)", data: m.gross });
-  series.push({ name: t('margin_legend_operating', lang), color: "var(--accent)", data: m.operating });
-  series.push({ name: t('margin_legend_net', lang), color: "var(--ink)", data: m.net });
+  if (showGross && m.gross && m.gross.some((v) => v != null)) series.push({ name: t('margin_legend_gross', lang), color: "var(--c2)", data: m.gross });
+  if (showOp) series.push({ name: t('margin_legend_operating', lang), color: "var(--accent)", data: m.operating });
+  if (showNet) series.push({ name: t('margin_legend_net', lang), color: "var(--ink)", data: m.net });
   
   const lastOp = m.operating[years.length - 1], firstOp = m.operating[0];
   const trendUp = lastOp > firstOp;
   return (
     <div className="container section">
       <div className="section-head">
-        <div className="section-title">{t('margin_trend_title', lang)} <span className="en">Margin trend</span></div>
+        <div className="section-title">{t('sec_margins', lang)} <span className="en">Margin trend</span></div>
         <div className={"delta " + (trendUp ? "up" : "down")} style={{ fontSize: 12 }}>
           {trendUp ? <IconArrowUp /> : <IconArrowDown />} Operating {trendUp ? t('improved_lbl', lang) : t('declined_lbl', lang)}
         </div>
       </div>
       <div className="card" style={{ padding: "15px 14px 12px" }}>
+        {/* Interactive Margin Chips */}
+        <div className="chips noscroll" style={{ marginBottom: 14, background: "none", padding: 0 }}>
+          {m.gross && m.gross.some((v) => v != null) && (
+            <button className={"chip" + (showGross ? " on" : "")} onClick={() => setShowGross(!showGross)}>
+              <span className="dot" style={{ width: 7, height: 7, borderRadius: 99, background: "var(--c2)" }} />
+              {t('margin_legend_gross', lang)}
+            </button>
+          )}
+          <button className={"chip" + (showOp ? " on" : "")} onClick={() => setShowOp(!showOp)}>
+            <span className="dot" style={{ width: 7, height: 7, borderRadius: 99, background: "var(--accent)" }} />
+            {t('margin_legend_operating', lang)}
+          </button>
+          <button className={"chip" + (showNet ? " on" : "")} onClick={() => setShowNet(!showNet)}>
+            <span className="dot" style={{ width: 7, height: 7, borderRadius: 99, background: "var(--ink)" }} />
+            {t('margin_legend_net', lang)}
+          </button>
+        </div>
+
         <LineChart series={series} years={years} floor={-60} height={220} unit={t('margin_of_rev_lbl', lang)} />
         {(!m.gross || !m.gross.some((v) => v != null)) && <div className="note-row"><IconInfo style={{ width: 14, height: 14, flex: "none", marginTop: 1 }} />{t('no_gross_margin_note', lang)}</div>}
       </div>
@@ -359,14 +384,17 @@ function Filing({ c, lang }) {
   return (
     <div className="container section">
       <div className="section-head"><div className="section-title">{t('latest_filing_title', lang)} <span className="en">Latest filing</span></div></div>
-      <div className="card" style={{ padding: 15, display: "flex", gap: 13 }}>
+      <a href={c.filing.url} target="_blank" rel="noopener noreferrer" className="card" style={{ padding: 15, display: "flex", gap: 13, textDecoration: "none", color: "inherit", cursor: "pointer" }}>
         <div style={{ width: 38, height: 38, borderRadius: 11, background: "var(--accent-soft)", color: "var(--accent-ink)", display: "grid", placeItems: "center", flex: "none" }}><IconDoc style={{ width: 19, height: 19 }} /></div>
-        <div>
-          <div style={{ fontWeight: 600, fontSize: 14 }}>{c.filing.title}</div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontWeight: 600, fontSize: 14, display: "flex", alignItems: "center", gap: 6 }}>
+            {c.filing.title}
+            <IconArrowRight style={{ width: 14, height: 14, color: "var(--accent-ink)" }} />
+          </div>
           <div className="tiny muted" style={{ margin: "1px 0 6px" }}>{c.filing.date}</div>
           <div className="small dim" style={{ lineHeight: 1.55 }}>{c.filing.highlight}</div>
         </div>
-      </div>
+      </a>
     </div>
   );
 }

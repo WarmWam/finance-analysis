@@ -97,7 +97,7 @@ function BarLineChart({ series, years, unit, fmt, height, unitSuffix }) {
               <g key={s.name + i}>
                 <rect x={xPos - bw/2} y={top} width={bw} height={Math.max(hh, 1)} rx="3" fill={s.color} opacity="0.92" />
                 {/* Bar top label */}
-                <text x={xPos} y={top - 6} textAnchor="middle" fill="var(--ink)" fontSize="10.5" fontWeight="600">{v.toFixed(1) + suffix}</text>
+                <text x={xPos} y={top - 6} textAnchor="middle" fill="var(--ink)" fontSize="10.5" fontWeight="600">{v.toFixed(v >= 100 ? 0 : 1)}</text>
               </g>
             );
           })
@@ -191,7 +191,24 @@ function LineChart({ series, years, height, unit, suffix, floor }) {
           return (
             <g key={s.name}>
               <path d={d} fill="none" stroke={s.color} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-              {s.data.map((v, i) => v == null ? null : <circle key={i} cx={x(i)} cy={y(v)} r="3" fill="var(--surface)" stroke={s.color} strokeWidth="2.2" />)}
+              {s.data.map((v, i) => {
+                if (v == null) return null;
+                const prev = s.data[i - 1];
+                const diff = prev != null ? v - prev : null;
+                return (
+                  <g key={i}>
+                    <circle cx={x(i)} cy={y(v)} r="3" fill="var(--surface)" stroke={s.color} strokeWidth="2.2" />
+                    {/* Line value label */}
+                    <text x={x(i)} y={y(v) - 8} textAnchor="middle" fill="var(--ink)" fontSize="10.5" fontWeight="600">{v.toFixed(1) + "%"}</text>
+                    {/* YoY change percentage points */}
+                    {diff !== null && (
+                      <text x={(x(i - 1) + x(i)) / 2} y={(y(prev) + y(v)) / 2 - 6} textAnchor="middle" fill={diff >= 0 ? "var(--bull)" : "var(--bear)"} fontSize="9.5" fontWeight="700">
+                        {(diff >= 0 ? "+" : "") + diff.toFixed(1) + "%"}
+                      </text>
+                    )}
+                  </g>
+                );
+              })}
             </g>
           );
         })}

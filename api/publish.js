@@ -42,7 +42,17 @@ export default async function handler(req, res) {
     body_th: body.body_th || null,
     catalysts: body.catalysts || [],
     risks: body.risks || [],
-    data_snapshot: body.data_snapshot || {},
+    data_snapshot: (() => {
+      const snap = body.data_snapshot || {};
+      snap.verdict = body.verdict || null;
+      snap.logo_text = body.logo_text || null;
+      snap.logo_color = body.logo_color || null;
+      snap.logo_ink = body.logo_ink || null;
+      snap.country_name_th = body.country_name_th || null;
+      snap.sector_th = body.sector_th || null;
+      snap.sector_en = body.sector_en || null;
+      return snap;
+    })(),
     published: body.published !== false,
     updated_at: new Date().toISOString(),
   };

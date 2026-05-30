@@ -161,9 +161,18 @@ function Financials({ c, lang }) {
               return (
                 <tr key={r.key} className={r.hl ? "hl" : ""}>
                   <td className="rowlabel">{r.th}<small>{r.en}{r.eps ? " · " + c.sym + "/หุ้น" : ""}</small></td>
-                  {arr.map((v, i) => (
-                    <td key={i}>{v == null ? <span className="dash">—</span> : <span className="num">{r.eps ? c.sym + fmtN(v, dec) : fmtN(v, 1)}</span>}</td>
-                  ))}
+                  {arr.map((v, i) => {
+                    let cls = "";
+                    if (i > 0 && v !== null && arr[i - 1] !== null) {
+                      if (v > arr[i - 1]) cls = "cell-better";
+                      else if (v < arr[i - 1]) cls = "cell-worse";
+                    }
+                    return (
+                      <td key={i} className={cls}>
+                        {v == null ? <span className="dash">—</span> : <span className="num">{r.eps ? c.sym + fmtN(v, dec) : fmtN(v, 1)}</span>}
+                      </td>
+                    );
+                  })}
                   <td>{allNull ? <span className="dash">—</span> : <Delta value={yoy(last, prev)} />}</td>
                 </tr>
               );

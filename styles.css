@@ -449,3 +449,7 @@ table.fin tr.hl { background: var(--accent-softer); }
 .preview-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
 .preview-head h2 { font-family: var(--font); font-size: 18px; margin: 0; }
 .preview-frame { background: var(--bg); border: 1px solid var(--border); border-radius: var(--r); padding: 24px; }
+
+/* Financial table highlights */
+table.fin td.cell-better { background-color: var(--bull-soft) !important; color: var(--bull) !important; }
+table.fin td.cell-worse { background-color: var(--bear-soft) !important; color: var(--bear) !important; }

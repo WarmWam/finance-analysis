@@ -32,6 +32,27 @@ function Sparkline({ data, w, h, color }) {
   );
 }
 
+function getNiceStepForBarChart(maxVal) {
+  const target = maxVal * 1.15; // Ensure at least 15% headroom for bar top labels
+  const targetStep = target / 3;
+  if (targetStep <= 0) return 1;
+  const magnitude = Math.pow(10, Math.floor(Math.log10(targetStep)));
+  const normalized = targetStep / magnitude; // between 1.0 and 10.0
+  
+  let stepMultiplier;
+  if (normalized <= 1.0) stepMultiplier = 1.0;
+  else if (normalized <= 1.5) stepMultiplier = 1.5;
+  else if (normalized <= 2.0) stepMultiplier = 2.0;
+  else if (normalized <= 2.5) stepMultiplier = 2.5;
+  else if (normalized <= 3.0) stepMultiplier = 3.0;
+  else if (normalized <= 4.0) stepMultiplier = 4.0;
+  else if (normalized <= 5.0) stepMultiplier = 5.0;
+  else if (normalized <= 7.5) stepMultiplier = 7.5;
+  else stepMultiplier = 10.0;
+  
+  return stepMultiplier * magnitude;
+}
+
 /* Revenue bars + profit line(s). series = [{kind:'bar'|'line', name, color, data[]}] */
 function BarLineChart({ series, years, unit, fmt, height, unitSuffix }) {
   const W = 680, H = height || 240;
@@ -55,7 +76,8 @@ function BarLineChart({ series, years, unit, fmt, height, unitSuffix }) {
     // Bar chart, anchor at 0 and leave room at top
     const maxVal = Math.max(...all, 1);
     lo = 0;
-    hi = maxVal * 1.24; // 24% padding at the top for labels
+    const step = getNiceStepForBarChart(maxVal);
+    hi = step * 3;
   }
 
   const n = years.length;
@@ -74,12 +96,20 @@ function BarLineChart({ series, years, unit, fmt, height, unitSuffix }) {
     <div className="chart">
       <svg viewBox={`0 0 ${W} ${H}`} role="img" preserveAspectRatio="xMidYMid meet">
         {/* Gridlines */}
-        {ticks.map((t, i) => (
-          <g key={i}>
-            <line className="gridline" x1={padL} x2={W - padR} y1={y(t)} y2={y(t)} stroke="var(--border)" strokeDasharray={Math.abs(t) < 1e-6 ? "0" : "3 4"} opacity={Math.abs(t) < 1e-6 ? 0.9 : 0.5} />
-            <text className="axis-lab" x={W - padR} y={y(t) - 4} textAnchor="end" fill="var(--ink-3)">{t.toFixed(1) + (barSeries.length === 0 ? "%" : suffix)}</text>
-          </g>
-        ))}
+        {ticks.map((t, i) => {
+          const isTop = i === ticks.length - 1;
+          const cleanVal = Number(t.toFixed(4));
+          const formattedVal = Number.isInteger(cleanVal) ? cleanVal.toString() : cleanVal.toFixed(1);
+          const displayLabel = isTop 
+            ? (barSeries.length === 0 ? formattedVal + "%" : formattedVal + suffix)
+            : formattedVal;
+          return (
+            <g key={i}>
+              <line className="gridline" x1={padL} x2={W - padR} y1={y(t)} y2={y(t)} stroke="var(--border)" strokeDasharray={Math.abs(t) < 1e-6 ? "0" : "3 4"} opacity={Math.abs(t) < 1e-6 ? 0.9 : 0.5} />
+              <text className="axis-lab" x={W - padR} y={y(t) - 4} textAnchor="end" fill="var(--ink-3)">{displayLabel}</text>
+            </g>
+          );
+        })}
         {zeroY != null && <line x1={padL} x2={W - padR} y1={zeroY} y2={zeroY} stroke="var(--ink-4)" strokeWidth="1.2" />}
 
         {/* Side-by-side Bars */}

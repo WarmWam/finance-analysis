@@ -211,6 +211,7 @@
     const filing = {
       title: snapFil.type || 'Filing',
       date: fmtDate(snapFil.date, lang) || '',
+      url: snapFil.url || '',
       highlight: pick(snapFil, 'highlight', lang)
     };
 

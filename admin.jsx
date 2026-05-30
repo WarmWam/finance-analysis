@@ -127,6 +127,7 @@ function AdminPage({ lang }) {
           </select>
         </label>
         <label className="fld"><span>Sector</span><input value={form.sector} onChange={set('sector')} /></label>
+        <label className="fld"><span>Logo URL</span><input value={form.logo_url} onChange={set('logo_url')} placeholder="https://.../logo.png" /></label>
         <label className="fld"><span>วันที่วิเคราะห์</span><input type="date" value={form.analysis_date} onChange={set('analysis_date')} /></label>
         <label className="fld"><span>Rating</span>
           <select value={form.rating} onChange={set('rating')}>

@@ -78,6 +78,15 @@ function MonoLogo({ c, size }) {
   const s = size || 44;
   const txt = c.logoText || c.name[0];
   const small = txt.length > 1;
+  const [imgOk, setImgOk] = React.useState(Boolean(c.logoUrl));
+  React.useEffect(() => setImgOk(Boolean(c.logoUrl)), [c.logoUrl]);
+  if (c.logoUrl && imgOk) {
+    return (
+      <div className="mono-logo image-logo" style={{ width: s, height: s, background: "#fff" }}>
+        <img src={c.logoUrl} alt={`${c.name} logo`} onError={() => setImgOk(false)} />
+      </div>
+    );
+  }
   return (
     <div className="mono-logo" style={{ width: s, height: s, background: c.logoColor, color: c.logoInk || "#fff", fontSize: small ? s * 0.3 : s * 0.46 }}>
       {txt}

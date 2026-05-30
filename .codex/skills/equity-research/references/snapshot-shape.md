@@ -70,6 +70,20 @@ are computed by the UI from the annual figures, so you don't supply them separat
   "analyst": { "strong_buy": 28, "buy": 12, "hold": 5, "sell": 1, "strong_sell": 0, // NEW strong sell count
                "target_avg": 1050, "target_low": 750, "target_high": 1400 },
   "peers": [ { "ticker": "AMD", "pe": 98 }, { "ticker": "AVGO", "pe": 41 } ],
+  "price_history": {
+    "source": "Yahoo Finance chart",
+    "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/NVDA?range=1y&interval=1d&events=history&includeAdjustedClose=true",
+    "symbol": "NVDA",
+    "interval": "1d",
+    "range": "1y",
+    "currency": "USD",
+    "exchange": "NMS",
+    "timezone": "America/New_York",
+    "fetched_at": "2026-05-30T10:00:00.000Z",
+    "candles": [
+      { "date": "2025-05-30", "open": 108.12, "high": 110.45, "low": 106.77, "close": 109.30, "adj_close": 109.30, "volume": 280000000 }
+    ]
+  },
   "filing": { "type": "10-K", "date": "2026-02-26", "url": "https://www.sec.gov/...",
               "highlight_en": "FY25 revenue +58% YoY...", "highlight_th": "รายได้ปี FY25 +58%..." },
   "insider": [ { "name": "J. Huang (CEO)", "action": "sell", "shares": 120000, "date": "2026-03-15" } ]
@@ -79,6 +93,11 @@ are computed by the UI from the annual figures, so you don't supply them separat
 **`currency`** is the display symbol: `$` US, `₩` Korea, `¥` Japan/China, `HK$` HK, `NT$` Taiwan.
 Any field you genuinely can't source: set numbers to `null` and arrays to `[]` rather
 than guessing. The UI shows `—` for nulls and hides empty sections gracefully.
+
+`price_history` is optional but preferred for new research records. Store daily
+OHLCV candles in ascending date order. Use raw prices in the listing currency,
+not formatted strings. Use Yahoo Finance chart data only as a secondary/free
+market-data source, and keep its `source_url` in the snapshot for auditability.
 
 **`filing.type`** by country: US `10-K`/`10-Q` (foreign ADR `20-F`); Korea `사업보고서`
 (annual) / `분기보고서` (quarterly); Japan `有価証券報告書` / `四半期報告書`; China A-share

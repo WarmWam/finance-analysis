@@ -11,6 +11,13 @@ function niceBounds(min, max) {
   return { lo, hi };
 }
 
+function paddedBounds(min, max, padRatio) {
+  if (min === max) { max = max + 1; min = min - 1; }
+  const span = max - min;
+  const pad = span * (padRatio || 0.08);
+  return { lo: min - pad, hi: max + pad };
+}
+
 /* tiny sparkline for cards: data[], up/down color auto from first→last */
 function Sparkline({ data, w, h, color }) {
   const W = w || 64, H = h || 22;
@@ -290,6 +297,75 @@ function LineChart({ series, years, height, unit, suffix, floor }) {
   );
 }
 
+function CandlestickChart({ history, height, currency }) {
+  const candles = ((history && history.candles) || []).filter((d) =>
+    d && d.date && d.open != null && d.high != null && d.low != null && d.close != null
+  );
+  if (candles.length < 2) return null;
+
+  const W = 680, H = height || 260;
+  const padL = 8, padR = 48, padT = 18, padB = 28;
+  const plotW = W - padL - padR, plotH = H - padT - padB;
+  const lows = candles.map((d) => d.low);
+  const highs = candles.map((d) => d.high);
+  const { lo, hi } = paddedBounds(Math.min(...lows), Math.max(...highs), 0.08);
+  const n = candles.length;
+  const step = plotW / n;
+  const bodyW = Math.max(1, Math.min(5, step * 0.62));
+  const x = (i) => padL + (i + 0.5) * step;
+  const y = (v) => padT + (hi - v) / (hi - lo) * plotH;
+  const ticks = [lo, lo + (hi - lo) / 2, hi];
+  const labelIdx = Array.from(new Set([0, Math.floor((n - 1) / 2), n - 1]));
+  const first = candles[0], last = candles[n - 1];
+  const up = last.close >= first.close;
+  const chg = ((last.close - first.close) / Math.abs(first.close || 1)) * 100;
+  const fmtPrice = (v) => {
+    const abs = Math.abs(v);
+    const dec = abs >= 100 ? 0 : abs >= 10 ? 1 : 2;
+    return (window.fmtN ? fmtN(v, dec) : Number(v).toFixed(dec));
+  };
+  const dateShort = (s) => {
+    const d = new Date(s + "T00:00:00Z");
+    if (Number.isNaN(d.getTime())) return s;
+    return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  };
+
+  return (
+    <div className="chart candle-chart">
+      <div className="candle-meta">
+        <span className="num">{currency || history.currency || ""}{fmtPrice(last.close)}</span>
+        <span className={"delta " + (up ? "up" : "down")}>{up ? "+" : ""}{fmtPrice(last.close - first.close)} ({up ? "+" : ""}{chg.toFixed(1)}%)</span>
+        <span className="tiny muted">{dateShort(first.date)} - {dateShort(last.date)}</span>
+      </div>
+      <svg viewBox={`0 0 ${W} ${H}`} role="img" preserveAspectRatio="xMidYMid meet">
+        {ticks.map((t, i) => (
+          <g key={i}>
+            <line className="gridline" x1={padL} x2={W - padR} y1={y(t)} y2={y(t)} strokeDasharray="3 4" opacity="0.5" />
+            <text className="axis-lab" x={W - 4} y={y(t) + 3} textAnchor="end">{fmtPrice(t)}</text>
+          </g>
+        ))}
+        {candles.map((d, i) => {
+          const isUp = d.close >= d.open;
+          const col = isUp ? "var(--bull)" : "var(--bear)";
+          const x0 = x(i);
+          const openY = y(d.open), closeY = y(d.close);
+          const top = Math.min(openY, closeY);
+          const bodyH = Math.max(1, Math.abs(closeY - openY));
+          return (
+            <g key={d.date}>
+              <line x1={x0} x2={x0} y1={y(d.high)} y2={y(d.low)} stroke={col} strokeWidth="1" opacity="0.72" />
+              <rect x={x0 - bodyW / 2} y={top} width={bodyW} height={bodyH} rx="0.8" fill={col} opacity={isUp ? "0.78" : "0.88"} />
+            </g>
+          );
+        })}
+        {labelIdx.map((idx) => (
+          <text key={idx} className="axis-lab" x={x(idx)} y={H - 8} textAnchor="middle">{dateShort(candles[idx].date)}</text>
+        ))}
+      </svg>
+    </div>
+  );
+}
+
 function ChartLegend({ series, lines }) {
   return (
     <div className="chart-legend">
@@ -303,4 +379,4 @@ function ChartLegend({ series, lines }) {
   );
 }
 
-Object.assign(window, { Sparkline, BarLineChart, LineChart, ChartLegend, niceBounds });
+Object.assign(window, { Sparkline, BarLineChart, LineChart, CandlestickChart, ChartLegend, niceBounds });

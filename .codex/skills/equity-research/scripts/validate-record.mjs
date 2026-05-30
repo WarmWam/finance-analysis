@@ -230,6 +230,38 @@ function main() {
       assert(f.highlight_th && f.highlight_th.length > 5, 'Filing: highlight_th', 'Thai filing highlight is missing or too short');
     }
 
+    // Optional daily price history for candlestick chart.
+    if (snap.price_history !== undefined && snap.price_history !== null) {
+      const ph = snap.price_history;
+      assert(ph.source && typeof ph.source === 'string', 'Price history: source', 'source is required');
+      assert(ph.source_url === undefined || ph.source_url === null || (typeof ph.source_url === 'string' && ph.source_url.startsWith('http')), 'Price history: source_url', 'source_url must be a URL when present');
+      assert(ph.symbol && typeof ph.symbol === 'string', 'Price history: symbol', 'symbol is required');
+      assert(ph.interval === '1d', 'Price history: interval', 'interval should be 1d for daily candles', 'warning');
+      assert(ph.range === '1y', 'Price history: range', 'range should be 1y', 'warning');
+      assert(Array.isArray(ph.candles), 'Price history: candles', 'candles must be an array');
+      if (Array.isArray(ph.candles)) {
+        assert(ph.candles.length >= 20, 'Price history: candle count', 'At least 20 valid candles are required');
+        if (ph.candles.length < 180) {
+          log('Price history', `Only ${ph.candles.length} candles found; acceptable for new listings but short for a 1Y chart`, 'warning');
+        }
+        let prevDate = '';
+        ph.candles.forEach((c, idx) => {
+          const label = `Price history[${idx}]`;
+          assert(c.date && /^\d{4}-\d{2}-\d{2}$/.test(c.date), `${label}.date`, 'date must match YYYY-MM-DD');
+          if (c.date && prevDate) assert(c.date > prevDate, `${label}.date_order`, 'candles must be strictly ascending by date');
+          prevDate = c.date || prevDate;
+          ['open', 'high', 'low', 'close'].forEach(k => {
+            assert(typeof c[k] === 'number' && Number.isFinite(c[k]), `${label}.${k}`, `${k} must be a finite number`);
+          });
+          assert(c.volume === null || c.volume === undefined || (typeof c.volume === 'number' && c.volume >= 0), `${label}.volume`, 'volume must be a non-negative number or null');
+          if (typeof c.open === 'number' && typeof c.high === 'number' && typeof c.low === 'number' && typeof c.close === 'number') {
+            assert(c.high >= Math.max(c.open, c.close, c.low), `${label}.high`, 'high must be >= open, close, and low');
+            assert(c.low <= Math.min(c.open, c.close, c.high), `${label}.low`, 'low must be <= open, close, and high');
+          }
+        });
+      }
+    }
+
     // ==========================================
     // 4. SEGMENT RECONCILIATION MATH CHECKS
     // ==========================================

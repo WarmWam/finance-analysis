@@ -7,9 +7,10 @@ description: >-
   "วิเคราะห์หุ้น ชื่อหุ้น", "ทำบทวิเคราะห์ บริษัท", or asks Codex to create a
   stock report for US, Korea, Japan, China, Hong Kong, Taiwan, or Thailand
   listings. The skill gathers current quote data, financial history, valuation,
-  filings, analyst views, business segments, bilingual Thai/English editorial,
-  validates the JSON snapshot against the current New UI contract, and publishes
-  through the existing /api/publish endpoint.
+  filings, analyst views, 1-year daily price/candlestick history, business
+  segments, bilingual Thai/English editorial, validates the JSON snapshot
+  against the current New UI contract, and publishes through the existing
+  /api/publish endpoint.
 ---
 
 # Ledger Lens Equity Research
@@ -29,7 +30,8 @@ range, segment views, and tables render consistently.
   object.
 - Include optional-but-useful New UI fields when sourceable:
   valuation metric ranges (`*_low`, `*_high`, `*_peer`), balance
-  `health_score`, analyst `strong_sell`, and segment reconciliation rows.
+  `health_score`, analyst `strong_sell`, 1-year daily `price_history`, and
+  segment reconciliation rows.
 - Save the record to `./.tmp/<ticker>-<date>.json`.
 - Run `scripts/validate-record.mjs` before publishing.
 - Publish with `scripts/publish.mjs`, which reads `LEDGER_ADMIN_TOKEN` from the
@@ -69,9 +71,17 @@ Codex:
      Koyfin-style pages, or FMP endpoint as secondary cross-checks.
    - If snippets are fragmented, create a temporary script under `./.tmp/` to
      fetch and normalize source tables. Keep the final record deterministic.
+   - For the price-action chart, fetch 1-year daily candles with:
+     `node .codex/skills/equity-research/scripts/fetch-price-history.mjs <yahoo-symbol> ./.tmp/<ticker>-price-history.json`.
+     Yahoo Finance's chart endpoint is a free/unofficial secondary source, so
+     store `source`, `source_url`, `fetched_at`, `range`, `interval`, and raw
+     OHLCV candles. If Yahoo fails or the ticker has no compatible symbol, leave
+     `data_snapshot.price_history` absent and mention the gap briefly.
 
 3. Capture the required facts:
    - Current quote: price, change %, market cap, currency, and the date/time used.
+   - Price history: 1-year daily OHLCV candles (`open`, `high`, `low`, `close`,
+     `adj_close`, `volume`) in ascending date order for the candlestick chart.
    - 5 years of annual revenue, gross profit, operating income, net income, EPS,
      and free cash flow. Use raw units.
    - Valuation: trailing P/E, forward P/E, P/S, P/B, EV/EBITDA, PEG, plus 5-year
@@ -101,6 +111,8 @@ Codex:
    - `body_en` and `body_th`: markdown narrative with headings and specific numbers.
    - `catalysts` and `risks`: 2-4 concrete items each.
    - `data_snapshot`: exact display data for the web app.
+   - Add `data_snapshot.price_history` only when the OHLCV fetch is valid; never
+     invent missing candles or smooth daily prices.
    - Do not place secrets or API keys in JSON. The publish script handles auth.
 
 6. Validate and publish from the repo root:

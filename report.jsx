@@ -85,6 +85,40 @@ function Verdict({ c, lang }) {
   );
 }
 
+/* ---------------- Price action ---------------- */
+function PriceAction({ c, lang }) {
+  const history = c.priceHistory;
+  if (!history || !history.candles || history.candles.length < 2) return null;
+  const candles = history.candles;
+  const first = candles[0], last = candles[candles.length - 1];
+  const change = ((last.close - first.close) / Math.abs(first.close || 1)) * 100;
+  const up = change >= 0;
+  const rangeText = `${candles.length} trading days`;
+  const source = history.source || 'Market chart data';
+  const sourceNode = history.sourceUrl
+    ? <a href={history.sourceUrl} target="_blank" rel="noopener noreferrer">{source}</a>
+    : source;
+
+  return (
+    <div className="container section">
+      <div className="section-head">
+        <div className="section-title">{lang === 'th' ? 'กราฟราคา 1 ปี' : '1Y Price Chart'} <span className="en">Daily candles</span></div>
+        <div className={"delta " + (up ? "up" : "down")} style={{ fontSize: 12 }}>
+          {up ? <IconArrowUp /> : <IconArrowDown />}
+          {up ? "+" : ""}{fmtN(change, 1)}%
+        </div>
+      </div>
+      <div className="card price-action-card">
+        <CandlestickChart history={history} height={270} currency={c.currency} />
+        <div className="price-action-foot">
+          <span>{lang === 'th' ? 'ช่วงข้อมูล' : 'Range'}: {history.range || '1y'} · {history.interval || '1d'} · {rangeText}</span>
+          <span>{lang === 'th' ? 'แหล่งข้อมูล' : 'Source'}: {sourceNode}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ---------------- Financials ---------------- */
 function Financials({ c, lang }) {
   const f = c.financials, years = c.years, n = years.length, margins = c.margins;
@@ -459,6 +493,7 @@ function Report({ c, onBack, lang }) {
 
       <Snapshot c={c} lang={lang} />
       <Verdict c={c} lang={lang} />
+      <PriceAction c={c} lang={lang} />
       <Financials c={c} lang={lang} />
       <Margins c={c} lang={lang} />
 
@@ -482,4 +517,3 @@ function AnalysisView({ a, lang }) {
 }
 
 Object.assign(window, { Report, AnalysisView });
-

@@ -206,6 +206,26 @@
       highNum: snapAna.target_high || 0
     };
 
+    const rawHistory = snap.price_history || null;
+    const priceHistory = rawHistory && Array.isArray(rawHistory.candles) ? {
+      source: rawHistory.source || '',
+      sourceUrl: rawHistory.source_url || '',
+      symbol: rawHistory.symbol || apiRecord.ticker || '',
+      interval: rawHistory.interval || '1d',
+      range: rawHistory.range || '1y',
+      currency: rawHistory.currency || ccy,
+      fetchedAt: rawHistory.fetched_at || '',
+      candles: rawHistory.candles.map(d => ({
+        date: d.date,
+        open: d.open,
+        high: d.high,
+        low: d.low,
+        close: d.close,
+        adjClose: d.adj_close,
+        volume: d.volume
+      })).filter(d => d.date && d.open != null && d.high != null && d.low != null && d.close != null)
+    } : null;
+
     // Filing mapping
     const snapFil = snap.filing || {};
     const filing = {
@@ -252,6 +272,7 @@
       verdict: verdict,
       financials: financials,
       margins: margins,
+      priceHistory: priceHistory,
       segmentViews: flattenSegments(snap.segments, factor, lang),
       valuation: valuation,
       balance: {

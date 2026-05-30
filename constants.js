@@ -45,6 +45,7 @@ window.STR = {
   m_coverage:       { en: 'Interest Coverage',     th: 'ความสามารถจ่ายดอกเบี้ย' },
 
   price_target:     { en: 'Price Target',          th: 'ราคาเป้าหมาย' },
+  current_price:    { en: 'Current Price',         th: 'ราคาปัจจุบัน' },
   buy:              { en: 'Buy',                    th: 'ซื้อ' },
   hold:             { en: 'Hold',                   th: 'ถือ' },
   sell:             { en: 'Sell',                   th: 'ขาย' },

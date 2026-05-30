@@ -101,7 +101,7 @@ function MarginTrendChart({ annual, lang }) {
 }
 
 // Analyst consensus: horizontal stacked count bar + target range.
-function AnalystChart({ analyst, currency, lang }) {
+function AnalystChart({ analyst, quote, currency, lang }) {
   if (!analyst) return null;
   const buckets = [
     { k: 'strong_buy', cls: 'seg-sbuy', label: 'Strong Buy' },
@@ -110,6 +110,10 @@ function AnalystChart({ analyst, currency, lang }) {
     { k: 'sell',       cls: 'seg-sell', label: t('sell', lang) },
   ];
   const total = buckets.reduce((s, b) => s + (analyst[b.k] || 0), 0) || 1;
+  const hasCurrentPrice =
+    quote && Number.isFinite(quote.price) &&
+    Number.isFinite(analyst.target_low) &&
+    Number.isFinite(analyst.target_high);
   return (
     <div className="analyst">
       <div className="consensus-bar">
@@ -128,6 +132,11 @@ function AnalystChart({ analyst, currency, lang }) {
           <span className="t-avg" style={{ left: `${pctPos(analyst)}%` }}>
             {t('price_target', lang)}: <b>{fmtNum(analyst.target_avg, 0)}</b>
           </span>
+          {hasCurrentPrice && (
+            <span className="t-current" style={{ left: `${pctRange(quote.price, analyst.target_low, analyst.target_high)}%` }}>
+              {t('current_price', lang)}: <b>{currency}{fmtNum(quote.price, 2)}</b>
+            </span>
+          )}
           <span className="t-high">{fmtNum(analyst.target_high, 0)}</span>
         </div>
       </div>
@@ -135,8 +144,11 @@ function AnalystChart({ analyst, currency, lang }) {
   );
 }
 function pctPos(a) {
-  if (a.target_high === a.target_low) return 50;
-  return Math.max(4, Math.min(96, ((a.target_avg - a.target_low) / (a.target_high - a.target_low)) * 100));
+  return pctRange(a.target_avg, a.target_low, a.target_high);
+}
+function pctRange(value, low, high) {
+  if (high === low) return 50;
+  return Math.max(4, Math.min(96, ((value - low) / (high - low)) * 100));
 }
 
 Object.assign(window, { RevenueProfitChart, MarginTrendChart, AnalystChart });

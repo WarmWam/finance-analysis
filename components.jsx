@@ -215,7 +215,7 @@ function AnalysisView({ a, lang }) {
       </div>
 
       <Section id="analyst" title={t('sec_analyst', lang)}>
-        <AnalystChart analyst={s.analyst} currency={cur} lang={lang} />
+        <AnalystChart analyst={s.analyst} quote={s.quote} currency={cur} lang={lang} />
       </Section>
 
       <Section id="filing" title={t('sec_filing', lang)}>

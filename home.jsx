@@ -68,7 +68,7 @@ function HomeList({ companies, onOpen, forceError, lang }) {
     if (country && c.country !== country) return false;
     if (rating && c.rating !== rating) return false;
     if (q.trim()) {
-      const s = (c.name + " " + (c.nameEn || "") + " " + c.ticker + " " + c.sector).toLowerCase();
+      const s = (c.name + " " + (c.nameTh || "") + " " + c.ticker + " " + c.sector).toLowerCase();
       if (!s.includes(q.trim().toLowerCase())) return false;
     }
     return true;

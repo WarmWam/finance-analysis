@@ -235,6 +235,11 @@ a:hover { color: var(--accent-ink); }
 .segment-delta { font-size: 10px; paint-order: stroke; stroke: var(--surface); stroke-width: 3px; }
 .segment-delta.up { fill: var(--up); }
 .segment-delta.down { fill: var(--down); }
+.segment-delta-line { stroke-width: 1.5; stroke-linecap: round; stroke-dasharray: 4 4; opacity: 0.85; }
+.segment-delta-line.up { stroke: var(--up); }
+.segment-delta-line.down { stroke: var(--down); }
+.segment-delta-dot.up { fill: var(--up); }
+.segment-delta-dot.down { fill: var(--down); }
 .segment-stack-label { fill: #fff; font-size: 9.5px; paint-order: stroke; stroke: rgba(0, 0, 0, 0.32); stroke-width: 2px; }
 .segment-chart-wrap { padding-top: 14px; }
 .segment-legend { gap: 12px 16px; }

@@ -267,7 +267,7 @@ function SegmentStackedChart({ set, metric, mode, currency, lang, paletteItems }
   const years = segmentYears(set);
   const items = segmentItemsWithMetric(set, metric);
   if (!years.length || !items.length) return <p className="muted">{t('segment_not_disclosed', lang)}</p>;
-  const pad = { ...PAD, t: 44, r: 20 };
+  const pad = { ...PAD, t: 58, r: 20 };
   const innerW = CHART_W - pad.l - pad.r, innerH = CHART_H - pad.t - pad.b;
   const slot = innerW / years.length;
   const bw = Math.min(48, slot * 0.55);
@@ -284,6 +284,12 @@ function SegmentStackedChart({ set, metric, mode, currency, lang, paletteItems }
   const span = maxPos - minNeg || 1;
   const y = (v) => pad.t + ((maxPos - v) / span) * innerH;
   const ticks = mix ? [0, 25, 50, 75, 100] : [minNeg, 0, maxPos * 0.5, maxPos].filter((v, i, a) => a.indexOf(v) === i);
+  const barCx = (i) => pad.l + slot * i + slot / 2;
+  const barAnchorY = (row) => row.total >= 0 ? y(mix ? 100 : row.pos) : y(row.neg);
+  const connectorY = (row) => {
+    const offset = row.total >= 0 ? -22 : 22;
+    return Math.max(18, Math.min(CHART_H - pad.b - 18, barAnchorY(row) + offset));
+  };
 
   return (
     <div className="chart-wrap segment-chart-wrap">
@@ -295,13 +301,10 @@ function SegmentStackedChart({ set, metric, mode, currency, lang, paletteItems }
           </g>
         ))}
         {rows.map((row, i) => {
-          const cx = pad.l + slot * i + slot / 2;
+          const cx = barCx(i);
           const stackTotal = row.pos || 1;
-          const prev = rows[i - 1];
-          const delta = prev && prev.total ? ((row.total - prev.total) / Math.abs(prev.total)) * 100 : null;
-          const labelAnchor = row.total >= 0 ? y(mix ? 100 : row.pos) : y(row.neg);
+          const labelAnchor = barAnchorY(row);
           const valueY = row.total >= 0 ? Math.max(14, labelAnchor - 8) : Math.min(CHART_H - pad.b - 4, labelAnchor + 14);
-          const deltaY = Math.min(CHART_H - pad.b - 4, valueY + 14);
           let pos = 0, neg = 0;
           return (
             <g key={row.year}>
@@ -331,12 +334,32 @@ function SegmentStackedChart({ set, metric, mode, currency, lang, paletteItems }
                   {fmtBig(row.total, currency)}
                 </text>
               )}
-              {delta != null && isFinite(delta) && (
-                <text x={cx} y={deltaY} className={`segment-delta ${delta >= 0 ? 'up' : 'down'}`} textAnchor="middle">
-                  {`${delta > 0 ? '+' : ''}${fmtNum(delta, 1)}%`}
-                </text>
-              )}
               <text x={cx} y={CHART_H - pad.b + 18} className="axis-label" textAnchor="middle">{row.year}</text>
+            </g>
+          );
+        })}
+        {rows.slice(1).map((row, i) => {
+          const prev = rows[i];
+          if (!prev.total) return null;
+          const delta = ((row.total - prev.total) / Math.abs(prev.total)) * 100;
+          if (!isFinite(delta)) return null;
+          const x1 = barCx(i) + bw / 2 + 9;
+          const x2 = barCx(i + 1) - bw / 2 - 9;
+          const y1 = connectorY(prev);
+          const y2 = connectorY(row);
+          const midX = (x1 + x2) / 2;
+          const labelY = delta >= 0
+            ? Math.max(13, (y1 + y2) / 2 - 6)
+            : Math.min(CHART_H - pad.b - 4, (y1 + y2) / 2 + 13);
+          const tone = delta >= 0 ? 'up' : 'down';
+          return (
+            <g key={`${prev.year}-${row.year}`} className="segment-delta-link">
+              <line x1={x1} y1={y1} x2={x2} y2={y2} className={`segment-delta-line ${tone}`} />
+              <circle cx={x1} cy={y1} r="2.2" className={`segment-delta-dot ${tone}`} />
+              <circle cx={x2} cy={y2} r="2.2" className={`segment-delta-dot ${tone}`} />
+              <text x={midX} y={labelY} className={`segment-delta ${tone}`} textAnchor="middle">
+                {`${delta > 0 ? '+' : ''}${fmtNum(delta, 1)}%`}
+              </text>
             </g>
           );
         })}

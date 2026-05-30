@@ -6,13 +6,13 @@ const { useState, useEffect, useMemo } = React;
 // window.USE_MOCK is false, these hit the serverless endpoints instead.
 async function fetchList() {
   if (window.USE_MOCK) return (window.MOCK_ANALYSES || []).slice();
-  const r = await fetch('/api/companies');
+  const r = await fetch('/api/companies', { cache: 'no-store' });
   if (!r.ok) throw new Error(`companies ${r.status}`);
   return r.json();
 }
 async function fetchOne(slug) {
   if (window.USE_MOCK) return (window.MOCK_ANALYSES || []).find(a => a.slug === slug) || null;
-  const r = await fetch(`/api/company?slug=${encodeURIComponent(slug)}`);
+  const r = await fetch(`/api/company?slug=${encodeURIComponent(slug)}`, { cache: 'no-store' });
   if (!r.ok) throw new Error(`company ${r.status}`);
   return r.json();
 }
@@ -27,7 +27,15 @@ function usePersistentLang() {
 function HomePage({ lang }) {
   const [list, setList] = useState(null);
   const [err, setErr] = useState(null);
-  useEffect(() => { fetchList().then(setList).catch(e => setErr(e.message)); }, []);
+  useEffect(() => {
+    let active = true;
+    const load = () => fetchList()
+      .then(items => { if (active) { setList(items); setErr(null); } })
+      .catch(e => { if (active) setErr(e.message); });
+    load();
+    window.addEventListener('focus', load);
+    return () => { active = false; window.removeEventListener('focus', load); };
+  }, []);
 
   return (
     <main className="container">

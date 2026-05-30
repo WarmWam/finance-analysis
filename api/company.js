@@ -17,6 +17,6 @@ export default async function handler(req, res) {
   const row = Array.isArray(rows) ? rows[0] : null;
   if (!row) return res.status(404).json({ error: 'not found' });
 
-  res.setHeader('Cache-Control', 'public, max-age=300, s-maxage=3600, stale-while-revalidate=86400');
+  res.setHeader('Cache-Control', 'no-store');
   res.status(200).json(row);
 }

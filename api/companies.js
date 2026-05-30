@@ -23,6 +23,6 @@ export default async function handler(req, res) {
     data_snapshot: { quote: a.data_snapshot?.quote || {} },
   }));
 
-  res.setHeader('Cache-Control', 'public, max-age=300, s-maxage=3600, stale-while-revalidate=86400');
+  res.setHeader('Cache-Control', 'no-store');
   res.status(200).json(slim);
 }

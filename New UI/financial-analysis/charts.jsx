@@ -33,127 +33,58 @@ function Sparkline({ data, w, h, color }) {
 }
 
 /* Revenue bars + profit line(s). series = [{kind:'bar'|'line', name, color, data[]}] */
-function BarLineChart({ series, years, unit, fmt, height, unitSuffix }) {
+function BarLineChart({ series, years, unit, fmt, height }) {
   const W = 680, H = height || 240;
-  const padL = 6, padR = 6, padT = 32, padB = 26; // padT is 32 to give room for YoY growth labels
+  const padL = 6, padR = 6, padT = 20, padB = 26;
   const plotW = W - padL - padR, plotH = H - padT - padB;
   const all = [];
   series.forEach((s) => s.data.forEach((v) => { if (v != null) all.push(v); }));
   if (!all.length) return null;
-
-  const barSeries = series.filter((s) => s.kind === "bar");
-  const lineSeries = series.filter((s) => s.kind === "line");
-
-  let lo, hi;
-  if (barSeries.length === 0 && lineSeries.length > 0) {
-    // Pure line chart (like Net Margin), center it nicely
-    const minVal = Math.min(...all), maxVal = Math.max(...all);
-    const bounds = niceBounds(minVal, maxVal);
-    lo = bounds.lo;
-    hi = bounds.hi;
-  } else {
-    // Bar chart, anchor at 0 and leave room at top
-    const maxVal = Math.max(...all, 1);
-    lo = 0;
-    hi = maxVal * 1.24; // 24% padding at the top for labels
-  }
-
+  const { lo, hi } = niceBounds(Math.min(...all), Math.max(...all));
   const n = years.length;
   const x = (i) => padL + (i + 0.5) * (plotW / n);
   const y = (v) => padT + (hi - v) / (hi - lo) * plotH;
-  
-  const numBars = barSeries.length;
-  const bw = (plotW / n) * 0.44 / Math.max(numBars, 1);
-  const suffix = unitSuffix || "";
-
-  // gridlines
-  const ticks = [lo, lo + (hi - lo) / 3, lo + 2 * (hi - lo) / 3, hi];
+  const bw = (plotW / n) * 0.46;
+  const f = fmt || ((v) => fmtN(v, 1));
+  // gridlines (3)
+  const ticks = [lo, lo + (hi - lo) / 2, hi];
   const zeroY = lo < 0 && hi > 0 ? y(0) : null;
-
   return (
     <div className="chart">
       <svg viewBox={`0 0 ${W} ${H}`} role="img" preserveAspectRatio="xMidYMid meet">
-        {/* Gridlines */}
         {ticks.map((t, i) => (
           <g key={i}>
-            <line className="gridline" x1={padL} x2={W - padR} y1={y(t)} y2={y(t)} stroke="var(--border)" strokeDasharray={Math.abs(t) < 1e-6 ? "0" : "3 4"} opacity={Math.abs(t) < 1e-6 ? 0.9 : 0.5} />
-            <text className="axis-lab" x={W - padR} y={y(t) - 4} textAnchor="end" fill="var(--ink-3)">{t.toFixed(1) + (barSeries.length === 0 ? "%" : suffix)}</text>
+            <line className="gridline" x1={padL} x2={W - padR} y1={y(t)} y2={y(t)} strokeDasharray={Math.abs(t) < 1e-6 ? "0" : "3 4"} opacity={Math.abs(t) < 1e-6 ? 0.9 : 0.5} />
+            <text className="axis-lab" x={W - padR} y={y(t) - 3} textAnchor="end">{f(t)}</text>
           </g>
         ))}
         {zeroY != null && <line x1={padL} x2={W - padR} y1={zeroY} y2={zeroY} stroke="var(--ink-4)" strokeWidth="1.2" />}
-
-        {/* Side-by-side Bars */}
-        {barSeries.map((s, sIdx) =>
+        {/* bars */}
+        {series.filter((s) => s.kind === "bar").map((s) =>
           s.data.map((v, i) => {
             if (v == null) return null;
-            let xPos = x(i);
-            if (numBars === 2) {
-              xPos = x(i) + (sIdx === 0 ? -bw/2 - 2 : bw/2 + 2);
-            }
             const y0 = zeroY != null ? zeroY : y(lo);
             const yv = y(v);
             const top = Math.min(y0, yv), hh = Math.abs(yv - y0);
-            return (
-              <g key={s.name + i}>
-                <rect x={xPos - bw/2} y={top} width={bw} height={Math.max(hh, 1)} rx="3" fill={s.color} opacity="0.92" />
-                {/* Bar top label */}
-                <text x={xPos} y={top - 6} textAnchor="middle" fill="var(--ink)" fontSize="10.5" fontWeight="600">{v.toFixed(1) + suffix}</text>
-              </g>
-            );
+            return <rect key={s.name + i} x={x(i) - bw / 2} y={top} width={bw} height={Math.max(hh, 1)} rx="3" fill={s.color} opacity="0.92" />;
           })
         )}
-
-        {/* Connecting dashed YoY growth lines (for the first bar series, i.e. Revenue) */}
-        {barSeries.length > 0 && (() => {
-          const s0 = barSeries[0];
-          return s0.data.map((v, i) => {
-            if (i === 0) return null;
-            const vPrev = s0.data[i - 1], vCur = v;
-            if (vPrev == null || vCur == null || vPrev === 0) return null;
-            const g = ((vCur - vPrev) / Math.abs(vPrev)) * 100;
-            const yPrev = y(vPrev), yCur = y(vCur);
-            let xPrev = x(i - 1), xCur = x(i);
-            if (numBars === 2) {
-              xPrev = x(i - 1) - bw/2 - 2;
-              xCur = x(i) - bw/2 - 2;
-            }
-            const x1 = xPrev + bw/2 + 4, y1 = yPrev;
-            const x2 = xCur - bw/2 - 4, y2 = yCur;
-            return (
-              <g key={'growth' + i}>
-                <line x1={x1} y1={y1} x2={x2} y2={y2} stroke={g >= 0 ? "var(--bull)" : "var(--bear)"} strokeDasharray="3 3" strokeWidth="1.2" opacity="0.8" />
-                <text x={(x1 + x2) / 2} y={(y1 + y2) / 2 - 8} textAnchor="middle" fill={g >= 0 ? "var(--bull)" : "var(--bear)"} fontSize="11" fontWeight="700">
-                  {(g >= 0 ? "+" : "") + g.toFixed(1) + "%"}
-                </text>
-              </g>
-            );
-          });
-        })()}
-
-        {/* Lines */}
-        {lineSeries.map((s) => {
+        {/* lines */}
+        {series.filter((s) => s.kind === "line").map((s) => {
           let d = "";
           s.data.forEach((v, i) => { if (v == null) return; d += (d ? "L" : "M") + x(i).toFixed(1) + " " + y(v).toFixed(1); });
           return (
             <g key={s.name}>
               <path d={d} fill="none" stroke={s.color} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-              {s.data.map((v, i) => (
-                v == null ? null : (
-                  <g key={i}>
-                    <circle cx={x(i)} cy={y(v)} r="3.6" fill="var(--surface)" stroke={s.color} strokeWidth="2.2" />
-                    {/* Line value label */}
-                    <text x={x(i)} y={y(v) - 8} textAnchor="middle" fill="var(--ink)" fontSize="10.5" fontWeight="600">{v.toFixed(1) + "%"}</text>
-                  </g>
-                )
-              ))}
+              {s.data.map((v, i) => v == null ? null : <circle key={i} cx={x(i)} cy={y(v)} r="3.2" fill="var(--surface)" stroke={s.color} strokeWidth="2.2" />)}
             </g>
           );
         })}
-
         {/* x labels */}
-        {years.map((yr, i) => <text key={yr} className="axis-lab" x={x(i)} y={H - 8} textAnchor="middle" fill="var(--ink-2)" fontSize="11">{yr}</text>)}
+        {years.map((yr, i) => <text key={yr} className="axis-lab" x={x(i)} y={H - 8} textAnchor="middle">{yr}</text>)}
       </svg>
       <ChartLegend series={series} />
+      {unit && <div className="foot">หน่วย: {unit}</div>}
     </div>
   );
 }

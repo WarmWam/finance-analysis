@@ -18,16 +18,29 @@ createServer(async (req, res) => {
   if (!file.startsWith(DIST)) { res.writeHead(403); return res.end('forbidden'); }
   try {
     const data = await readFile(file);
-    res.writeHead(200, { 'content-type': TYPES[extname(file)] || 'application/octet-stream' });
+    res.writeHead(200, { 
+      'content-type': TYPES[extname(file)] || 'application/octet-stream',
+      'cache-control': 'no-store, no-cache, must-revalidate, proxy-revalidate'
+    });
     res.end(data);
   } catch {
-    // SPA fallback: unknown non-asset path -> index.html
+    // If it's a missing asset under /assets/, return a clean 404 instead of HTML
+    if (path.startsWith('/assets/')) {
+      res.writeHead(404);
+      res.end('not found');
+      return;
+    }
+    // SPA fallback: unknown non-asset path (History API routes) -> index.html
     try {
       const html = await readFile(join(DIST, 'index.html'));
-      res.writeHead(200, { 'content-type': 'text/html' });
+      res.writeHead(200, { 
+        'content-type': 'text/html',
+        'cache-control': 'no-store, no-cache, must-revalidate, proxy-revalidate'
+      });
       res.end(html);
     } catch {
       res.writeHead(404); res.end('not found');
     }
   }
 }).listen(PORT, () => console.log(`preview server on http://localhost:${PORT}`));
+

@@ -1,6 +1,17 @@
-// Main app: routing, data loading, and page assembly.
+/* app.jsx — shell, History API routing, loading/error, tweaks & bilingual integration */
 
-const { useState, useEffect, useMemo } = React;
+const ACCENTS = {
+  blue:   ["#3a5bd9", "#2c46ac", "#eaeefb", "#f3f6fe"],
+  teal:   ["#0d8f86", "#0a6f68", "#e2f3f0", "#f0faf8"],
+  violet: ["#6d4bd8", "#5538b0", "#efe9fb", "#f7f3fd"],
+  slate:  ["#46566f", "#33425a", "#ebeef2", "#f4f6f9"],
+};
+
+const TWEAK_DEFAULTS = {
+  "accent": ["#3a5bd9", "#2c46ac", "#eaeefb", "#f3f6fe"],
+  "radius": 14,
+  "homeState": "ปกติ"
+};
 
 // Data access. Phase 1 reads window.MOCK_ANALYSES; once the API is live and
 // window.USE_MOCK is false, these hit the serverless endpoints instead.
@@ -11,90 +22,161 @@ async function fetchList() {
   return r.json();
 }
 async function fetchOne(slug) {
-  if (window.USE_MOCK) return (window.MOCK_ANALYSES || []).find(a => a.slug === slug) || null;
+  if (window.USE_MOCK) {
+    const s = (slug || '').toLowerCase();
+    return (window.MOCK_ANALYSES || []).find(a => 
+      (a.slug || '').toLowerCase() === s || 
+      (a.ticker || '').toLowerCase() === s
+    ) || null;
+  }
   const r = await fetch(`/api/company?slug=${encodeURIComponent(slug)}`, { cache: 'no-store' });
   if (!r.ok) throw new Error(`company ${r.status}`);
   return r.json();
 }
 
 function usePersistentLang() {
-  const [lang, setLang] = useState(() => localStorage.getItem('lang') || 'th');
-  useEffect(() => { localStorage.setItem('lang', lang); document.documentElement.lang = lang; }, [lang]);
+  const [lang, setLang] = React.useState(() => localStorage.getItem('lang') || 'th');
+  React.useEffect(() => {
+    localStorage.setItem('lang', lang);
+    document.documentElement.lang = lang;
+  }, [lang]);
   return [lang, setLang];
 }
 
-// --- Home -------------------------------------------------------------------
-function HomePage({ lang }) {
-  const [list, setList] = useState(null);
-  const [err, setErr] = useState(null);
-  useEffect(() => {
-    let active = true;
-    const load = () => fetchList()
-      .then(items => { if (active) { setList(items); setErr(null); } })
-      .catch(e => { if (active) setErr(e.message); });
-    load();
-    window.addEventListener('focus', load);
-    return () => { active = false; window.removeEventListener('focus', load); };
-  }, []);
-
-  return (
-    <main className="container">
-      <section className="hero">
-        <h1>{t('site_name', lang)}</h1>
-        <p>{t('tagline', lang)}</p>
-      </section>
-      <h2 className="list-title">{t('latest', lang)}</h2>
-      {err && <p className="error">{err}</p>}
-      {!list && !err && <p className="muted">{t('loading', lang)}</p>}
-      {list && list.length === 0 && <p className="muted">{t('empty', lang)}</p>}
-      {list && (
-        <div className="grid">
-          {list.map(a => <AnalysisCard key={a.slug} a={a} lang={lang} />)}
-        </div>
-      )}
-    </main>
-  );
-}
-
-// --- Company ----------------------------------------------------------------
-function CompanyPage({ slug, lang }) {
-  const [a, setA] = useState(null);
-  const [err, setErr] = useState(null);
-  useEffect(() => {
-    setA(null);
-    fetchOne(slug).then(setA).catch(e => setErr(e.message));
-    window.scrollTo(0, 0);
-  }, [slug]);
-
-  if (err) return <main className="container"><p className="error">{err}</p></main>;
-  if (!a) return <main className="container"><p className="muted">{t('loading', lang)}</p></main>;
-
-  return (
-    <main className="container article">
-      <a className="back" href="/" onClick={(e) => { e.preventDefault(); navigate('/'); }}>{t('back', lang)}</a>
-      <AnalysisView a={a} lang={lang} />
-    </main>
-  );
-}
-
-// AdminPage lives in admin.jsx (loaded before this file).
-
-// --- Root -------------------------------------------------------------------
 function App() {
+  const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
   const [lang, setLang] = usePersistentLang();
   const route = useRoute();
-  let page;
-  if (route.name === 'company') page = <CompanyPage slug={route.slug} lang={lang} />;
-  else if (route.name === 'admin') page = <AdminPage lang={lang} />;
-  else page = <HomePage lang={lang} />;
+  
+  const [list, setList] = React.useState(null);
+  const [activeCompany, setActiveCompany] = React.useState(null);
+  const [err, setErr] = React.useState(null);
+  const [loading, setLoading] = React.useState(true);
+
+  // apply tweak css vars
+  React.useEffect(() => {
+    const r = document.documentElement;
+    const a = t.accent || ACCENTS.blue;
+    r.style.setProperty("--accent", a[0]);
+    r.style.setProperty("--accent-ink", a[1]);
+    r.style.setProperty("--accent-soft", a[2]);
+    r.style.setProperty("--accent-softer", a[3]);
+    r.style.setProperty("--r", t.radius + "px");
+    r.style.setProperty("--r-sm", Math.max(5, t.radius - 6) + "px");
+    r.style.setProperty("--r-lg", (t.radius + 6) + "px");
+  }, [t.accent, t.radius]);
+
+  // Load companies list on home
+  React.useEffect(() => {
+    if (route.name !== 'home') return;
+    setLoading(true);
+    let active = true;
+    fetchList()
+      .then(items => {
+        if (active) {
+          const adapted = items.map(item => adaptRecord(item, lang));
+          setList(adapted);
+          setErr(null);
+          setLoading(false);
+        }
+      })
+      .catch(e => {
+        if (active) {
+          setErr(e.message);
+          setLoading(false);
+        }
+      });
+    return () => { active = false; };
+  }, [route.name, lang]);
+
+  // Load active company on report page
+  React.useEffect(() => {
+    if (route.name !== 'company') {
+      setActiveCompany(null);
+      return;
+    }
+    setLoading(true);
+    let active = true;
+    fetchOne(route.slug)
+      .then(item => {
+        if (active) {
+          if (item) {
+            const adapted = adaptRecord(item, lang);
+            setActiveCompany(adapted);
+            setErr(null);
+          } else {
+            setErr("Company not found");
+          }
+          setLoading(false);
+        }
+      })
+      .catch(e => {
+        if (active) {
+          setErr(e.message);
+          setLoading(false);
+        }
+      });
+    return () => { active = false; };
+  }, [route.name, route.slug, lang]);
+
+  const openCompany = (id) => {
+    const found = list ? list.find(c => c.id === id) : null;
+    const slug = found ? found.slug : id;
+    navigate('/company/' + encodeURIComponent(slug));
+  };
+  const goHome = () => { navigate('/'); };
+
+  let body;
+  if (loading || t.homeState === "loading") {
+    body = <LoadingState />;
+  } else if (route.name === 'admin') {
+    body = <AdminPage lang={lang} />;
+  } else if (route.name === 'company') {
+    body = activeCompany
+      ? <Report c={activeCompany} onBack={goHome} lang={lang} />
+      : <div className="container"><ErrorState lang={lang} onRetry={goHome} /></div>;
+  } else {
+    body = list
+      ? <HomeList companies={list} onOpen={openCompany} forceError={err || t.homeState === "error"} lang={lang} />
+      : <LoadingState />;
+  }
 
   return (
-    <React.Fragment>
-      <Nav lang={lang} setLang={setLang} />
-      {page}
-      <Footer lang={lang} />
-    </React.Fragment>
+    <div className="app">
+      <div className="appbar">
+        <div className="appbar-inner">
+          <button className="brand" onClick={goHome} style={{ background: "none", border: "none", padding: 0 }}>
+            <span className="brand-mark" />
+            <span style={{ display: "flex", flexDirection: "column", lineHeight: 1.1, alignItems: "flex-start" }}>
+              <span className="brand-name">Ledger Lens</span>
+              <span className="brand-sub">Equity research</span>
+            </span>
+          </button>
+          
+          <div style={{ marginLeft: "auto" }} />
+          <button className="lang-toggle" onClick={() => setLang(lang === 'th' ? 'en' : 'th')}>
+            {lang === 'th' ? 'EN' : 'ไทย'}
+          </button>
+        </div>
+      </div>
+
+      <div className="page">{body}</div>
+
+      <TweaksPanel>
+        <TweakSection label="ธีมสี · Accent" />
+        <TweakColor label="สีนำสายตา" value={t.accent}
+          options={[ACCENTS.blue, ACCENTS.teal, ACCENTS.violet, ACCENTS.slate]}
+          onChange={(v) => setTweak("accent", v)} />
+        <TweakSection label="รูปทรง · Shape" />
+        <TweakSlider label="ความมนการ์ด" value={t.radius} min={6} max={22} step={2} unit="px"
+          onChange={(v) => setTweak("radius", v)} />
+        <TweakSection label="พรีวิวสถานะ · States" />
+        <TweakRadio label="หน้า Home" value={t.homeState}
+          options={["ปกติ", "loading", "error"]}
+          onChange={(v) => setTweak("homeState", v)} />
+      </TweaksPanel>
+    </div>
   );
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);

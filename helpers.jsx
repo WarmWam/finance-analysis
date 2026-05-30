@@ -1,11 +1,12 @@
 // Shared helpers: i18n, number formatting, a tiny markdown renderer, routing.
-
 // --- i18n -------------------------------------------------------------------
 function t(key, lang) {
+  const activeLang = lang || (document.documentElement && document.documentElement.lang) || 'th';
   const e = (window.STR || {})[key];
   if (!e) return key;
-  return e[lang] || e.en || key;
+  return e[activeLang] || e.en || key;
 }
+
 // Pick a bilingual field from a record: pick(rec, 'summary', lang) -> summary_th|summary_en
 function pick(rec, base, lang) {
   if (!rec) return '';
@@ -103,7 +104,7 @@ function useRoute() {
 }
 
 // Derived YoY growth series from an annual array.
-function yoy(arr, key) {
+function yoyArray(arr, key) {
   return arr.map((row, i) => {
     if (i === 0) return null;
     const prev = arr[i - 1][key], cur = row[key];
@@ -115,5 +116,6 @@ function yoy(arr, key) {
 // Expose to the global scope so the other IIFE-wrapped source files can use them.
 Object.assign(window, {
   t, pick, fmtBig, fmtPct, fmtNum, fmtX, fmtSignedPct, fmtDate,
-  mdToHtml, MD, parseRoute, navigate, useRoute, yoy,
+  mdToHtml, MD, parseRoute, navigate, useRoute, yoyArray,
 });
+

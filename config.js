@@ -6,4 +6,4 @@ window.SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXB
 
 // When true, the app renders from local mock data instead of the API.
 // Phase 1 demo flag — set to false once Supabase + api/ are live.
-window.USE_MOCK = false;
+window.USE_MOCK = true;

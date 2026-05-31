@@ -87,13 +87,7 @@ function HomeList({ companies, onOpen, forceError, lang }) {
 
   return (
     <div className="container">
-      <div className="home-hero">
-        <div className="eyebrow">{t('latest_research_eyebrow', lang)}</div>
-        <h1>{t('site_name', lang)}</h1>
-        <p className="small muted" style={{ margin: "2px 0 0" }}>{t('tagline', lang)}</p>
-      </div>
-
-      <div style={{ display: "flex", gap: 10, margin: "6px 0 12px" }}>
+      <div style={{ display: "flex", gap: 10, margin: "16px 0 12px" }}>
         <div className="search">
           <IconSearch />
           <input placeholder={t('search_placeholder', lang)} value={q} onChange={(e) => setQ(e.target.value)} />

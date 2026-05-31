@@ -149,13 +149,8 @@ function App() {
             <span className="brand-mark" />
             <span style={{ display: "flex", flexDirection: "column", lineHeight: 1.1, alignItems: "flex-start" }}>
               <span className="brand-name">Ledger Lens</span>
-              <span className="brand-sub">Equity research</span>
+              <span className="brand-sub">Stock analysis</span>
             </span>
-          </button>
-          
-          <div style={{ marginLeft: "auto" }} />
-          <button className="lang-toggle" onClick={() => setLang(lang === 'th' ? 'en' : 'th')}>
-            {lang === 'th' ? 'EN' : 'ไทย'}
           </button>
         </div>
       </div>

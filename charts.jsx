@@ -297,8 +297,44 @@ function LineChart({ series, years, height, unit, suffix, floor }) {
   );
 }
 
+const RANGE_OPTIONS = [
+  { key: "1W", label: "1W" },
+  { key: "1M", label: "1M" },
+  { key: "3M", label: "3M" },
+  { key: "6M", label: "6M" },
+  { key: "1Y", label: "1Y" },
+];
+// Start index for the range selector (candles are ascending by date):
+//   1W -> most recent Monday on/before the last date
+//   1M -> first day of the last candle's month
+//   3M / 6M -> first day of the month N months before the last candle's month
+//   1Y -> first candle
+function periodStartIndex(candles, period) {
+  const n = candles.length;
+  if (!period || period === "1Y" || n === 0) return 0;
+  const end = new Date(candles[n - 1].date + "T00:00:00Z");
+  let target;
+  if (period === "1W") {
+    const back = (end.getUTCDay() + 6) % 7; // days since Monday
+    target = new Date(end);
+    target.setUTCDate(end.getUTCDate() - back);
+  } else if (period === "1M") {
+    target = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), 1));
+  } else if (period === "3M") {
+    target = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth() - 3, 1));
+  } else if (period === "6M") {
+    target = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth() - 6, 1));
+  } else {
+    return 0;
+  }
+  const ts = target.toISOString().slice(0, 10);
+  const idx = candles.findIndex((c) => c.date >= ts);
+  return idx < 0 ? 0 : idx;
+}
+
 function CandlestickChart({ history, height, currency }) {
   const [hover, setHover] = React.useState(null);
+  const [period, setPeriod] = React.useState(null);
   const svgRef = React.useRef(null);
   const candles = ((history && history.candles) || []).filter((d) =>
     d && d.date && d.open != null && d.high != null && d.low != null && d.close != null
@@ -306,11 +342,22 @@ function CandlestickChart({ history, height, currency }) {
   if (candles.length < 2) return null;
 
   const W = 680, H = height || 260;
-  const padL = 8, padR = 48, padT = 18, padB = 28;
-  const plotW = W - padL - padR, plotH = H - padT - padB;
+  const padL = 8, padT = 18, padB = 28;
   const lows = candles.map((d) => d.low);
   const highs = candles.map((d) => d.high);
   const { lo, hi } = paddedBounds(Math.min(...lows), Math.max(...highs), 0.08);
+  const cur = currency || (history && history.currency) || "";
+  const fmtPrice = (v) => {
+    const abs = Math.abs(v);
+    const dec = abs >= 100 ? 0 : abs >= 10 ? 1 : 2;
+    return (window.fmtN ? fmtN(v, dec) : Number(v).toFixed(dec));
+  };
+  const ticks = [lo, lo + (hi - lo) / 2, hi];
+  // Right gutter sized to the widest price label (currency + up to millions) so
+  // 7-digit values like ₩2,357,744 and the crosshair tag aren't clipped.
+  const maxLabelLen = Math.max(...ticks.map((t) => (cur + fmtPrice(t)).length));
+  const padR = Math.max(48, Math.round(maxLabelLen * 7 + 14));
+  const plotW = W - padL - padR, plotH = H - padT - padB;
   const n = candles.length;
   const step = plotW / n;
   const bodyW = Math.max(1, Math.min(5, step * 0.62));
@@ -318,16 +365,11 @@ function CandlestickChart({ history, height, currency }) {
   const y = (v) => padT + (hi - v) / (hi - lo) * plotH;
   const priceAtY = (yy) => hi - ((yy - padT) / plotH) * (hi - lo);
   const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
-  const ticks = [lo, lo + (hi - lo) / 2, hi];
   const labelIdx = Array.from(new Set([0, Math.floor((n - 1) / 2), n - 1]));
   const first = candles[0], last = candles[n - 1];
   const up = last.close >= first.close;
   const chg = ((last.close - first.close) / Math.abs(first.close || 1)) * 100;
-  const fmtPrice = (v) => {
-    const abs = Math.abs(v);
-    const dec = abs >= 100 ? 0 : abs >= 10 ? 1 : 2;
-    return (window.fmtN ? fmtN(v, dec) : Number(v).toFixed(dec));
-  };
+  const pStart = period ? periodStartIndex(candles, period) : -1;
   const dateShort = (s) => {
     const d = new Date(s + "T00:00:00Z");
     if (Number.isNaN(d.getTime())) return s;
@@ -371,6 +413,16 @@ function CandlestickChart({ history, height, currency }) {
         <span className={"delta " + (up ? "up" : "down")}>{up ? "+" : ""}{fmtPrice(last.close - first.close)} ({up ? "+" : ""}{chg.toFixed(1)}%)</span>
         <span className="tiny muted">{dateShort(first.date)} - {dateShort(last.date)}</span>
       </div>
+      <div className="candle-range">
+        {RANGE_OPTIONS.map((o) => (
+          <button
+            key={o.key}
+            type="button"
+            className={"cp-btn" + (period === o.key ? " on" : "")}
+            onClick={() => setPeriod(period === o.key ? null : o.key)}
+          >{o.label}</button>
+        ))}
+      </div>
       <svg
         ref={svgRef}
         viewBox={`0 0 ${W} ${H}`}
@@ -400,6 +452,31 @@ function CandlestickChart({ history, height, currency }) {
             </g>
           );
         })}
+        {period && pStart >= 0 && pStart < n - 1 && (() => {
+          const sIdx = pStart, eIdx = n - 1;
+          const sX = x(sIdx), eX = x(eIdx);
+          const sC = candles[sIdx].close, eC = candles[eIdx].close;
+          const sY = y(sC), eY = y(eC);
+          const pPct = ((eC - sC) / Math.abs(sC || 1)) * 100;
+          const pUp = eC >= sC;
+          const bw = 60;
+          const bx = clamp((sX + eX) / 2 - bw / 2, padL, W - padR - bw);
+          return (
+            <g className="candle-period">
+              <line className="cp-vline" x1={sX} x2={sX} y1={padT} y2={H - padB} />
+              <line className="cp-vline" x1={eX} x2={eX} y1={padT} y2={H - padB} />
+              <line className="cp-hline" x1={padL} x2={W - padR} y1={sY} y2={sY} />
+              <line className="cp-hline" x1={padL} x2={W - padR} y1={eY} y2={eY} />
+              <line className={"cp-trend " + (pUp ? "up" : "down")} x1={sX} y1={sY} x2={eX} y2={eY} />
+              <rect className="candle-axis-tag" x={W - padR + 4} y={sY - 9} width={padR - 8} height="18" rx="4" />
+              <text className="candle-axis-tag-text" x={W - 4} y={sY + 4} textAnchor="end">{cur}{fmtPrice(sC)}</text>
+              <rect className="candle-axis-tag" x={W - padR + 4} y={eY - 9} width={padR - 8} height="18" rx="4" />
+              <text className="candle-axis-tag-text" x={W - 4} y={eY + 4} textAnchor="end">{cur}{fmtPrice(eC)}</text>
+              <rect className={"cp-badge " + (pUp ? "up" : "down")} x={bx} y={padT + 2} width={bw} height="18" rx="9" />
+              <text className="cp-badge-text" x={bx + bw / 2} y={padT + 15} textAnchor="middle">{pUp ? "+" : ""}{pPct.toFixed(1)}%</text>
+            </g>
+          );
+        })()}
         {labelIdx.map((idx) => (
           <text key={idx} className="axis-lab" x={x(idx)} y={H - 8} textAnchor="middle">{dateShort(candles[idx].date)}</text>
         ))}

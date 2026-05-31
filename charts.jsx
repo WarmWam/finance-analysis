@@ -332,9 +332,25 @@ function periodStartIndex(candles, period) {
   return idx < 0 ? 0 : idx;
 }
 
+// Resolve a period (or custom start/end dates) to candle indices.
+function rangeIndices(candles, period, custom) {
+  const n = candles.length;
+  if (period === "custom") {
+    let sIdx = custom.start ? candles.findIndex((c) => c.date >= custom.start) : 0;
+    if (sIdx < 0) sIdx = 0;
+    let eIdx = n - 1;
+    if (custom.end) {
+      for (let i = n - 1; i >= 0; i -= 1) { if (candles[i].date <= custom.end) { eIdx = i; break; } }
+    }
+    return { sIdx, eIdx };
+  }
+  return { sIdx: periodStartIndex(candles, period), eIdx: n - 1 };
+}
+
 function CandlestickChart({ history, height, currency }) {
   const [hover, setHover] = React.useState(null);
   const [period, setPeriod] = React.useState(null);
+  const [custom, setCustom] = React.useState({ start: "", end: "" });
   const svgRef = React.useRef(null);
   const candles = ((history && history.candles) || []).filter((d) =>
     d && d.date && d.open != null && d.high != null && d.low != null && d.close != null
@@ -369,7 +385,7 @@ function CandlestickChart({ history, height, currency }) {
   const first = candles[0], last = candles[n - 1];
   const up = last.close >= first.close;
   const chg = ((last.close - first.close) / Math.abs(first.close || 1)) * 100;
-  const pStart = period ? periodStartIndex(candles, period) : -1;
+  const range = period ? rangeIndices(candles, period, custom) : null;
   const dateShort = (s) => {
     const d = new Date(s + "T00:00:00Z");
     if (Number.isNaN(d.getTime())) return s;
@@ -422,7 +438,23 @@ function CandlestickChart({ history, height, currency }) {
             onClick={() => setPeriod(period === o.key ? null : o.key)}
           >{o.label}</button>
         ))}
+        <button
+          type="button"
+          className={"cp-btn" + (period === "custom" ? " on" : "")}
+          onClick={() => setPeriod(period === "custom" ? null : "custom")}
+        >Custom</button>
       </div>
+      {period === "custom" && (
+        <div className="candle-custom">
+          <input type="date" className="cp-date" value={custom.start || first.date}
+            min={first.date} max={custom.end || last.date}
+            onChange={(e) => setCustom((c) => ({ ...c, start: e.target.value }))} />
+          <span className="tiny muted">→</span>
+          <input type="date" className="cp-date" value={custom.end || last.date}
+            min={custom.start || first.date} max={last.date}
+            onChange={(e) => setCustom((c) => ({ ...c, end: e.target.value }))} />
+        </div>
+      )}
       <svg
         ref={svgRef}
         viewBox={`0 0 ${W} ${H}`}
@@ -452,8 +484,8 @@ function CandlestickChart({ history, height, currency }) {
             </g>
           );
         })}
-        {period && pStart >= 0 && pStart < n - 1 && (() => {
-          const sIdx = pStart, eIdx = n - 1;
+        {period && range && range.sIdx >= 0 && range.sIdx < range.eIdx && (() => {
+          const sIdx = range.sIdx, eIdx = range.eIdx;
           const sX = x(sIdx), eX = x(eIdx);
           const sC = candles[sIdx].close, eC = candles[eIdx].close;
           const sY = y(sC), eY = y(eC);

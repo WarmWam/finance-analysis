@@ -55,6 +55,10 @@ function HomeList({ companies, onOpen, forceError, lang }) {
     const translated = t(key, lang);
     return translated === key ? (c.countryName || c.country) : translated;
   };
+  const countryCounts = (companies || []).reduce((acc, c) => {
+    if (c.country) acc[c.country] = (acc[c.country] || 0) + 1;
+    return acc;
+  }, {});
   const countries = Array.from(
     new Map((companies || [])
       .filter((c) => c.country)
@@ -100,7 +104,7 @@ function HomeList({ companies, onOpen, forceError, lang }) {
       <div className="chips noscroll" style={{ marginBottom: 16 }}>
         {countries.map((c) => (
           <button key={c.code} className={"chip" + (country === c.code ? " on" : "")} onClick={() => setCountry(country === c.code ? null : c.code)}>
-            {c.label}
+            {c.label}<span style={{ opacity: 0.55, fontSize: "0.85em", marginLeft: 4 }}>({countryCounts[c.code] || 0})</span>
           </button>
         ))}
         <span style={{ width: 1, background: "var(--border-2)", margin: "4px 2px", flex: "none" }} />

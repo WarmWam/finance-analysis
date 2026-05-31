@@ -16,7 +16,7 @@ The record you POST is one JSON object. `/api/publish` stores it in the Supabase
   "sector": "Semiconductors",
   "sector_th": "เซมิคอนดักเตอร์ & ฮาร์ดแวร์", // Thai sector name
   "sector_en": "Semiconductors & Hardware", // English sector name
-  "logo_url": "https://...",      // optional real logo image URL; UI falls back to logo_text
+  "logo_url": "",                 // optional real logo URL; leave "" to use the logo_text monogram. Do NOT use logo.clearbit.com (discontinued).
   "logo_text": "NVDA",           // 1-3 char monogram for brand logo
   "logo_color": "#76b900",       // brand primary hex color
   "logo_ink": "#fff",            // optional logo text color override (default: #fff)

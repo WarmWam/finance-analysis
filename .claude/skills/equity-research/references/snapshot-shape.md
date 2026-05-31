@@ -19,7 +19,7 @@ the page just works.
   "sector_th":     "เซมิคอนดักเตอร์",   // Thai sector (optional — adapter uses if present)
 
   // --- Branding (optional — adapter falls back to first letter of name) ---
-  "logo_url":      "",                  // URL to a square logo image (leave "" if none)
+  "logo_url":      "",                  // square logo image URL; leave "" to use the monogram. Do NOT use logo.clearbit.com (discontinued).
   "logo_text":     "N",                 // 1-2 char monogram shown when no logo_url
   "logo_color":    "#76b900",           // background colour of the monogram tile
   "logo_ink":      "#ffffff",           // text colour on the monogram tile

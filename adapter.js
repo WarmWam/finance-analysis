@@ -1,6 +1,13 @@
 // adapter.js — Transforms production database / mock data format to New UI components format
 
 (function () {
+  // Clearbit's free logo API was discontinued (logo.clearbit.com no longer
+  // resolves), so drop those URLs and let MonoLogo render its letter tile.
+  function cleanLogoUrl(url) {
+    if (!url || /(^https?:)?\/\/logo\.clearbit\.com\//i.test(url)) return '';
+    return url;
+  }
+
   function getUnitAndFactor(revList, currency) {
     const vals = (revList || []).filter(v => v !== null && v !== undefined);
     if (vals.length === 0) return { factor: 1e9, unit: 'พันล้าน', unitEn: 'billion ' + currency };
@@ -250,7 +257,7 @@
       sectorEn: apiRecord.sector_en || snap.sector_en || apiRecord.sector,
       name: apiRecord.name,
       nameTh: apiRecord.name_th || '',
-      logoUrl: apiRecord.logo_url || snap.logo_url || '',
+      logoUrl: cleanLogoUrl(apiRecord.logo_url || snap.logo_url || ''),
       logoText: apiRecord.logo_text || snap.logo_text || apiRecord.name[0],
       logoColor: apiRecord.logo_color || snap.logo_color || '#3a5bd9',
       logoInk: apiRecord.logo_ink || snap.logo_ink || '#fff',

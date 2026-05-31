@@ -44,7 +44,7 @@ export default async function handler(req, res) {
     meta.exchange = p.exchangeShortName || p.exchange || '';
     meta.sector = p.sector || '';
     meta.country = p.country || '';
-    meta.logo_url = p.image || '';
+    meta.logo_url = (p.image && !/logo\.clearbit\.com/i.test(p.image)) ? p.image : ''; // Clearbit logo API is discontinued
     snapshot.quote.currency = p.currency ? currencySymbol(p.currency) : '$';
     snapshot.quote.price = num(p.price);
     snapshot.quote.market_cap = num(p.mktCap);

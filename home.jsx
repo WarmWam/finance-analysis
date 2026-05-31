@@ -109,13 +109,14 @@ function HomeList({ companies, onOpen, forceError, lang, filter, setFilter }) {
         </div>
       </div>
 
-      <div className="chips noscroll" style={{ marginBottom: 16 }}>
+      <div className="chips noscroll" style={{ marginBottom: 8 }}>
         {countries.map((c) => (
           <button key={c.code} className={"chip" + (country === c.code ? " on" : "")} onClick={() => setCountry(country === c.code ? null : c.code)}>
             {c.label}<span style={{ opacity: 0.55, fontSize: "0.85em", marginLeft: 4 }}>({countryCounts[c.code] || 0})</span>
           </button>
         ))}
-        <span style={{ width: 1, background: "var(--border-2)", margin: "4px 2px", flex: "none" }} />
+      </div>
+      <div className="chips noscroll" style={{ marginBottom: 16 }}>
         {ratings.map((r) => (
           <button key={r.code} className={"chip" + (rating === r.code ? " on" : "")} onClick={() => setRating(rating === r.code ? null : r.code)}>
             <span className="dot" style={{ width: 7, height: 7, borderRadius: 99, background: r.code === "bull" ? "var(--bull)" : r.code === "bear" ? "var(--bear)" : "var(--warn)" }} />{r.label}

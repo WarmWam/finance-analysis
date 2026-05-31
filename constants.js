@@ -102,7 +102,7 @@ window.STR = {
   c_nl:             { en: 'Netherlands',           th: 'เนเธอร์แลนด์' },
   latest_research_eyebrow: { en: 'Latest equity research', th: 'บทวิเคราะห์ล่าสุด' },
   search_placeholder: { en: 'Search ticker or company name...', th: 'ค้นหา ticker หรือชื่อบริษัท…' },
-  clear_filters:    { en: 'Clear filters',         th: 'ล้างตัวกรอง' },
+  clear_filters:    { en: 'Clear',                  th: 'ล้างตัวกรอง' },
   empty_state_title: { en: 'No analyses found',     th: 'ไม่พบบทวิเคราะห์ที่ตรงกัน' },
   empty_state_desc:  { en: 'Try changing search term or clearing filters', th: 'ลองเปลี่ยนคำค้นหรือล้างตัวกรอง แล้วลองใหม่อีกครั้ง' },
   error_state_title: { en: 'Failed to load analyses', th: 'โหลดข้อมูลไม่สำเร็จ' },

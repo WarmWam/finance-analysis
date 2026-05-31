@@ -8,6 +8,9 @@ function moneyU(c, v, dec) {
 /* ---------------- Snapshot header ---------------- */
 function Snapshot({ c, lang }) {
   const ch = c.price.changePct;
+  const a = c.analysts || {};
+  const hasTarget = a.avgNum > 0 && a.nowNum > 0;
+  const upside = hasTarget ? ((a.avgNum - a.nowNum) / a.nowNum) * 100 : null;
   return (
     <div className="snapshot container">
       <div className="snap-top">
@@ -21,7 +24,15 @@ function Snapshot({ c, lang }) {
             <span>{c.sector}</span>
           </div>
         </div>
-        <RatingPill rating={c.rating} label={c.ratingLabel} size="lg" />
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+          <RatingPill rating={c.rating} label={c.ratingLabel} size="lg" />
+          {hasTarget && (
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+              <Delta value={upside} />
+              <span className="tiny muted">{t('vs_avg_target', lang)}</span>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="price-row">

@@ -154,6 +154,7 @@ window.STR = {
   recommendations_lbl: { en: 'Recommendations',     th: 'คำแนะนำ' },
   avg_target:        { en: 'Avg target',            th: 'ราคาเป้าหมายเฉลี่ย' },
   from_current_price: { en: 'from current price',   th: 'จากราคาปัจจุบัน' },
+  vs_avg_target:     { en: 'vs avg target',          th: 'เทียบราคาเป้าหมายเฉลี่ย' },
   low_label:         { en: 'Low',                   th: 'ต่ำ' },
   avg_label:         { en: 'Avg',                   th: 'เฉลี่ย' },
   high_label:        { en: 'High',                  th: 'สูง' },

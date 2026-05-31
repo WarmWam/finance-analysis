@@ -1,6 +1,9 @@
 /* home.jsx — Home / Analysis List + state components (exported to window) */
 
 function StockCard({ c, onOpen, lang }) {
+  const a = c.analysts || {};
+  const hasTarget = a.avgNum > 0 && a.nowNum > 0;
+  const upside = hasTarget ? ((a.avgNum - a.nowNum) / a.nowNum) * 100 : null;
   return (
     <button className="stock-card" onClick={() => onOpen(c.id)} style={{ textAlign: "left" }}>
       <div className="sc-top">
@@ -14,7 +17,15 @@ function StockCard({ c, onOpen, lang }) {
           </div>
           <div className="sc-meta" style={{ marginTop: 1 }}>{c.sector}</div>
         </div>
-        <RatingPill rating={c.rating} label={c.ratingLabel} />
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flex: "none" }}>
+          <RatingPill rating={c.rating} label={c.ratingLabel} />
+          {hasTarget && (
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 4, whiteSpace: "nowrap" }}>
+              <Delta value={upside} />
+              <span className="tiny muted">{t('vs_target_short', lang)}</span>
+            </div>
+          )}
+        </div>
       </div>
       <div className="sc-summary">{c.summary}</div>
       <div className="sc-stats">

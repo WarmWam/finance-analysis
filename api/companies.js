@@ -22,6 +22,7 @@ export default async function handler(req, res) {
     ...a,
     data_snapshot: {
       quote: a.data_snapshot?.quote || {},
+      analyst: a.data_snapshot?.analyst || {},
       logo_text: a.data_snapshot?.logo_text || null,
       logo_color: a.data_snapshot?.logo_color || null,
       logo_ink: a.data_snapshot?.logo_ink || null,

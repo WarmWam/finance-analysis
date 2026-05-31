@@ -75,9 +75,11 @@ window.STR = {
                       th: 'เพื่อการศึกษาเท่านั้น ไม่ใช่คำแนะนำการลงทุน' },
 
   // New UI specific keys
-  rating_bull:      { en: 'Bullish',               th: 'เชิงบวก' },
+  rating_bull:      { en: 'Bull',                  th: 'เชิงบวก' },
   rating_neutral:   { en: 'Neutral',               th: 'เป็นกลาง' },
-  rating_bear:      { en: 'Bearish',               th: 'เชิงลบ' },
+  rating_bear:      { en: 'Bear',                  th: 'เชิงลบ' },
+  sort_mcap:        { en: 'Market cap',            th: 'มูลค่าตลาด' },
+  sort_upside:      { en: 'Upside',                th: 'อัพไซด์' },
   rating_sbuy:      { en: 'Strong Buy',            th: 'ซื้อมาก' },
   rating_buy:       { en: 'Buy',                   th: 'ซื้อ' },
   rating_hold:      { en: 'Hold',                  th: 'ถือ' },

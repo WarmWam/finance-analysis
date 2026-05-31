@@ -53,7 +53,7 @@ function App() {
   const [loading, setLoading] = React.useState(true);
   // Home filters live here (not in HomeList) so they survive in-app back
   // navigation; a full page refresh remounts App and clears them.
-  const [homeFilter, setHomeFilter] = React.useState({ country: null, rating: null, q: "" });
+  const [homeFilter, setHomeFilter] = React.useState({ country: null, rating: null, q: "", sort: null });
 
   // apply tweak css vars
   React.useEffect(() => {

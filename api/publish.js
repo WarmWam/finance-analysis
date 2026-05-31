@@ -3,6 +3,30 @@
 // keyed on the unique `slug`. This is the ONLY write path; it runs with the
 // service-role key, which bypasses RLS.
 
+// ISO currency by listing country (the `currency` field is only a display symbol,
+// and ¥ is ambiguous JPY/CNY — country is the reliable key).
+const CCY_BY_COUNTRY = { US: 'USD', KR: 'KRW', JP: 'JPY', CN: 'CNY', HK: 'HKD', TW: 'TWD', GB: 'GBP', SG: 'SGD' };
+
+// Freeze a USD market cap on the snapshot so the home grid can sort across
+// currencies. Point-in-time: the rate is captured now and never re-fetched at
+// read time. Never blocks publishing if the FX lookup fails.
+async function injectMarketCapUsd(snap, country) {
+  try {
+    const q = snap && snap.quote;
+    if (!q || q.market_cap == null || q.market_cap_usd != null) return;
+    const iso = CCY_BY_COUNTRY[country] || null;
+    if (iso === 'USD') { q.market_cap_usd = q.market_cap; q.fx_usd_per_unit = 1; return; }
+    if (!iso) return;
+    const fx = await fetch('https://open.er-api.com/v6/latest/USD').then(r => (r.ok ? r.json() : null)).catch(() => null);
+    const rate = fx && fx.rates && fx.rates[iso]; // units of `iso` per 1 USD
+    if (rate) {
+      q.market_cap_usd = q.market_cap / rate;
+      q.fx_usd_per_unit = 1 / rate;
+      q.fx_as_of = (fx.time_last_update_utc || '').toString();
+    }
+  } catch { /* FX is best-effort; never block a publish */ }
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'method not allowed' });
 
@@ -56,6 +80,9 @@ export default async function handler(req, res) {
     published: body.published !== false,
     updated_at: new Date().toISOString(),
   };
+
+  // Freeze USD market cap (best-effort) before persisting.
+  await injectMarketCapUsd(row.data_snapshot, row.country);
 
   const r = await fetch(`${sbUrl}/rest/v1/analyses?on_conflict=slug`, {
     method: 'POST',

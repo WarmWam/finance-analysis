@@ -60,9 +60,17 @@ function HomeList({ companies, onOpen, forceError, lang, filter, setFilter }) {
   const f = filter || { country: null, rating: null, q: "" };
   const apply = setFilter || (() => {});
   const q = f.q || "", country = f.country || null, rating = f.rating || null;
+  const sort = f.sort || null;
   const setQ = (v) => apply((s) => ({ ...s, q: v }));
   const setCountry = (v) => apply((s) => ({ ...s, country: v }));
   const setRating = (v) => apply((s) => ({ ...s, rating: v }));
+  const setSort = (v) => apply((s) => ({ ...s, sort: v }));
+  // tri-state per key: off -> desc -> asc -> off
+  const cycleSort = (key) => {
+    if (!sort || sort.key !== key) setSort({ key, dir: "desc" });
+    else if (sort.dir === "desc") setSort({ key, dir: "asc" });
+    else setSort(null);
+  };
 
   const countryLabel = (c) => {
     const key = 'c_' + String(c.country || '').toLowerCase();
@@ -97,6 +105,27 @@ function HomeList({ companies, onOpen, forceError, lang, filter, setFilter }) {
     return true;
   });
 
+  const sortVal = (c) => {
+    if (!sort) return null;
+    if (sort.key === "mcap") {
+      const p = c.price || {};
+      if (p.marketCapUsdNum != null) return p.marketCapUsdNum;   // cross-currency (frozen USD)
+      return p.marketCapNum != null ? p.marketCapNum : null;     // fallback: native (older records)
+    }
+    if (sort.key === "upside") {
+      const a = c.analysts || {};
+      return (a.avgNum > 0 && a.nowNum > 0) ? ((a.avgNum - a.nowNum) / a.nowNum) * 100 : null;
+    }
+    return null;
+  };
+  const sorted = sort ? [...filtered].sort((x, y) => {
+    const a = sortVal(x), b = sortVal(y);
+    if (a == null && b == null) return 0;
+    if (a == null) return 1;   // missing data always last
+    if (b == null) return -1;
+    return sort.dir === "desc" ? b - a : a - b;
+  }) : filtered;
+
   const hasFilter = country || rating || q.trim();
 
   return (
@@ -122,6 +151,15 @@ function HomeList({ companies, onOpen, forceError, lang, filter, setFilter }) {
             <span className="dot" style={{ width: 7, height: 7, borderRadius: 99, background: r.code === "bull" ? "var(--bull)" : r.code === "bear" ? "var(--bear)" : "var(--warn)" }} />{r.label}
           </button>
         ))}
+        <span style={{ width: 1, background: "var(--border-2)", margin: "4px 2px", flex: "none" }} />
+        {[{ key: "mcap", label: t('sort_mcap', lang) }, { key: "upside", label: t('sort_upside', lang) }].map((s) => {
+          const on = sort && sort.key === s.key;
+          return (
+            <button key={s.key} className={"chip" + (on ? " on" : "")} onClick={() => cycleSort(s.key)} style={{ flex: "none" }}>
+              {s.label}{on ? <span style={{ marginLeft: 4, fontSize: "0.95em", fontWeight: 700 }}>{sort.dir === "desc" ? "↓" : "↑"}</span> : null}
+            </button>
+          );
+        })}
         {hasFilter && <button className="chip" onClick={() => { setCountry(null); setRating(null); setQ(""); }} style={{ color: "var(--accent-ink)" }}>{t('clear_filters', lang)}</button>}
       </div>
 
@@ -129,7 +167,7 @@ function HomeList({ companies, onOpen, forceError, lang, filter, setFilter }) {
         <EmptyState lang={lang} onClear={() => { setCountry(null); setRating(null); setQ(""); }} />
       ) : (
         <div className="card-grid">
-          {filtered.map((c) => <StockCard key={c.id} c={c} onOpen={onOpen} lang={lang} />)}
+          {sorted.map((c) => <StockCard key={c.id} c={c} onOpen={onOpen} lang={lang} />)}
         </div>
       )}
     </div>

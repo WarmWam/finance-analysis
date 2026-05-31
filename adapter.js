@@ -267,6 +267,8 @@
         now: fmtN(quote.price),
         changePct: quote.change_pct,
         marketCap: fmtBig(quote.market_cap, ccy),
+        marketCapNum: (quote.market_cap === null || quote.market_cap === undefined) ? null : quote.market_cap,
+        marketCapUsdNum: (quote.market_cap_usd === null || quote.market_cap_usd === undefined) ? null : quote.market_cap_usd,
         pe: fmtN(snapVal.pe),
         peFwd: fmtN(snapVal.forward_pe),
         asOf: fmtDate(apiRecord.analysis_date, lang)

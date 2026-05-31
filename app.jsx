@@ -34,13 +34,12 @@ async function fetchOne(slug) {
   return r.json();
 }
 
+// UI is English-only (analysis content stays Thai via the adapter). The language
+// toggle was removed; keep a fixed 'en' so all t()-driven labels render English.
 function usePersistentLang() {
-  const [lang, setLang] = React.useState(() => localStorage.getItem('lang') || 'th');
-  React.useEffect(() => {
-    localStorage.setItem('lang', lang);
-    document.documentElement.lang = lang;
-  }, [lang]);
-  return [lang, setLang];
+  const [lang] = React.useState('en');
+  React.useEffect(() => { document.documentElement.lang = 'en'; }, []);
+  return [lang, () => {}];
 }
 
 function App() {
@@ -52,6 +51,9 @@ function App() {
   const [activeCompany, setActiveCompany] = React.useState(null);
   const [err, setErr] = React.useState(null);
   const [loading, setLoading] = React.useState(true);
+  // Home filters live here (not in HomeList) so they survive in-app back
+  // navigation; a full page refresh remounts App and clears them.
+  const [homeFilter, setHomeFilter] = React.useState({ country: null, rating: null, q: "" });
 
   // apply tweak css vars
   React.useEffect(() => {
@@ -137,7 +139,7 @@ function App() {
       : <div className="container"><ErrorState lang={lang} onRetry={goHome} /></div>;
   } else {
     body = list
-      ? <HomeList companies={list} onOpen={openCompany} forceError={err || t.homeState === "error"} lang={lang} />
+      ? <HomeList companies={list} onOpen={openCompany} forceError={err || t.homeState === "error"} lang={lang} filter={homeFilter} setFilter={setHomeFilter} />
       : <LoadingState />;
   }
 

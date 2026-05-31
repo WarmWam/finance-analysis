@@ -115,12 +115,12 @@ function Segments({ company, lang }) {
         <div className="seg-controls" style={{ marginBottom: 14 }}>
           <div className="sel-wrap" style={{ flex: 1, minWidth: 150 }}>
             <select className="sel" value={viewId} onChange={(e) => setViewId(e.target.value)}>
-              {views.map((v) => <option key={v.id} value={v.id}>{v.label} · {v.labelEn}</option>)}
+              {views.map((v) => <option key={v.id} value={v.id}>{v.labelEn || v.label}</option>)}
             </select>
           </div>
           <div className="sel-wrap" style={{ flex: 1, minWidth: 150 }}>
             <select className="sel" value={metric} onChange={(e) => setMetric(e.target.value)}>
-              {metrics.map((m) => <option key={m} value={m}>{METRIC_LABELS[m].th} · {METRIC_LABELS[m].en}</option>)}
+              {metrics.map((m) => <option key={m} value={m}>{METRIC_LABELS[m].en}</option>)}
             </select>
           </div>
           {isLevel && (

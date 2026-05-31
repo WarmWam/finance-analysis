@@ -205,7 +205,7 @@ function Financials({ c, lang }) {
               const dec = r.eps ? (Math.abs(last || 0) >= 100 ? 0 : 2) : 1;
               return (
                 <tr key={r.key} className={r.hl ? "hl" : ""}>
-                  <td className="rowlabel">{r.th}<small>{r.en}{r.eps ? " · " + c.sym + "/หุ้น" : ""}</small></td>
+                  <td className="rowlabel">{r.th}{r.eps ? <small>{c.sym}/share</small> : null}</td>
                   {arr.map((v, i) => {
                     let cls = "";
                     if (i > 0 && v !== null && arr[i - 1] !== null) {

@@ -56,14 +56,17 @@ function StockCard({ c, onOpen, lang }) {
   );
 }
 
-function HomeList({ companies, onOpen, forceError, lang }) {
-  const [q, setQ] = React.useState("");
-  const [country, setCountry] = React.useState(null);
-  const [rating, setRating] = React.useState(null);
+function HomeList({ companies, onOpen, forceError, lang, filter, setFilter }) {
+  const f = filter || { country: null, rating: null, q: "" };
+  const apply = setFilter || (() => {});
+  const q = f.q || "", country = f.country || null, rating = f.rating || null;
+  const setQ = (v) => apply((s) => ({ ...s, q: v }));
+  const setCountry = (v) => apply((s) => ({ ...s, country: v }));
+  const setRating = (v) => apply((s) => ({ ...s, rating: v }));
 
   const countryLabel = (c) => {
     const key = 'c_' + String(c.country || '').toLowerCase();
-    const translated = t(key, lang);
+    const translated = t(key, 'en');
     return translated === key ? (c.countryName || c.country) : translated;
   };
   const countryCounts = (companies || []).reduce((acc, c) => {
@@ -75,7 +78,7 @@ function HomeList({ companies, onOpen, forceError, lang }) {
       .filter((c) => c.country)
       .map((c) => [c.country, { code: c.country, label: countryLabel(c) }])
     ).values()
-  ).sort((a, b) => a.label.localeCompare(b.label, lang === 'th' ? 'th' : 'en'));
+  ).sort((a, b) => (countryCounts[b.code] || 0) - (countryCounts[a.code] || 0) || a.label.localeCompare(b.label, 'en'));
   const ratings = [
     { code: "bull", label: t('rating_bull', lang) }, 
     { code: "neutral", label: t('rating_neutral', lang) }, 

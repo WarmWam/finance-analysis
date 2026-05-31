@@ -79,6 +79,8 @@
     const snap = apiRecord.data_snapshot || {};
     const quote = snap.quote || {};
     const ccy = quote.currency || '$';
+    // UI labels follow `lang` (English); the written analysis stays Thai.
+    const CL = 'th';
     
     // Auto-detect unit & factor based on revenues
     const rawRevenues = (snap.annual || []).map(r => r.revenue);
@@ -123,24 +125,24 @@
     const recordVerdict = apiRecord.verdict || snap.verdict;
     const verdict = recordVerdict ? {
       interesting: {
-        label: pick(recordVerdict.interesting, 'label', lang),
+        label: pick(recordVerdict.interesting, 'label', CL),
         tone: recordVerdict.interesting.tone || 'neutral',
-        detail: pick(recordVerdict.interesting, 'detail', lang)
+        detail: pick(recordVerdict.interesting, 'detail', CL)
       },
       margin: {
-        label: pick(recordVerdict.margin, 'label', lang),
+        label: pick(recordVerdict.margin, 'label', CL),
         tone: recordVerdict.margin.tone || 'neutral',
-        detail: pick(recordVerdict.margin, 'detail', lang)
+        detail: pick(recordVerdict.margin, 'detail', CL)
       },
       mainBiz: {
-        label: pick(recordVerdict.mainBiz, 'label', lang),
+        label: pick(recordVerdict.mainBiz, 'label', CL),
         tone: recordVerdict.mainBiz.tone || 'neutral',
-        detail: pick(recordVerdict.mainBiz, 'detail', lang)
+        detail: pick(recordVerdict.mainBiz, 'detail', CL)
       },
       valuation: {
-        label: pick(recordVerdict.valuation, 'label', lang),
+        label: pick(recordVerdict.valuation, 'label', CL),
         tone: recordVerdict.valuation.tone || 'neutral',
-        detail: pick(recordVerdict.valuation, 'detail', lang)
+        detail: pick(recordVerdict.valuation, 'detail', CL)
       }
     } : {
       interesting: { label: t('v_interesting_lbl', lang), tone: 'neutral', detail: t('v_interesting_det', lang) },
@@ -232,7 +234,7 @@
       title: snapFil.type || 'Filing',
       date: fmtDate(snapFil.date, lang) || '',
       url: snapFil.url || '',
-      highlight: pick(snapFil, 'highlight', lang)
+      highlight: pick(snapFil, 'highlight', CL)
     };
 
     return {
@@ -241,7 +243,9 @@
       ticker: apiRecord.ticker || '',
       exchange: apiRecord.exchange || '',
       country: apiRecord.country || '',
-      countryName: apiRecord.country_name_th || snap.country_name_th || (lang === 'th' ? (apiRecord.country === 'US' ? 'สหรัฐอเมริกา' : apiRecord.country === 'KR' ? 'เกาหลีใต้' : apiRecord.country === 'JP' ? 'ญี่ปุ่น' : apiRecord.country === 'TH' ? 'ไทย' : apiRecord.country === 'HK' ? 'ฮ่องกง' : apiRecord.country) : apiRecord.country),
+      countryName: lang === 'th'
+        ? (apiRecord.country_name_th || snap.country_name_th || (apiRecord.country === 'US' ? 'สหรัฐอเมริกา' : apiRecord.country === 'KR' ? 'เกาหลีใต้' : apiRecord.country === 'JP' ? 'ญี่ปุ่น' : apiRecord.country === 'TH' ? 'ไทย' : apiRecord.country === 'HK' ? 'ฮ่องกง' : apiRecord.country))
+        : (apiRecord.country === 'US' ? 'United States' : apiRecord.country === 'KR' ? 'South Korea' : apiRecord.country === 'JP' ? 'Japan' : apiRecord.country === 'TH' ? 'Thailand' : apiRecord.country === 'HK' ? 'Hong Kong' : apiRecord.country === 'CN' ? 'China' : apiRecord.country === 'TW' ? 'Taiwan' : apiRecord.country),
       sector: pick(apiRecord, 'sector', lang) || snap.sector_th || snap.sector_en || apiRecord.sector,
       sectorEn: apiRecord.sector_en || snap.sector_en || apiRecord.sector,
       name: apiRecord.name,
@@ -267,8 +271,8 @@
         peFwd: fmtN(snapVal.forward_pe),
         asOf: fmtDate(apiRecord.analysis_date, lang)
       },
-      summary: pick(apiRecord, 'summary', lang),
-      thesis: pick(apiRecord, 'body', lang),
+      summary: pick(apiRecord, 'summary', CL),
+      thesis: pick(apiRecord, 'body', CL),
       verdict: verdict,
       financials: financials,
       margins: margins,
@@ -282,8 +286,8 @@
       },
       analysts: analysts,
       filing: filing,
-      catalysts: (apiRecord.catalysts || []).map(item => item[lang] || item.en || ''),
-      risks: (apiRecord.risks || []).map(item => item[lang] || item.en || '')
+      catalysts: (apiRecord.catalysts || []).map(item => item[CL] || item.en || ''),
+      risks: (apiRecord.risks || []).map(item => item[CL] || item.en || '')
     };
   }
 
